@@ -114,24 +114,59 @@ docker-compose up -d postgres redis
 ```
 
 ### 주요 명령어
+
+#### 🚀 빠른 시작
 ```bash
-# 개발 서버 실행
-yarn kbeauty:dev
+# 전체 개발 환경 빠른 시작
+yarn kbeauty:quick-start
 
-# 빌드
-yarn kbeauty:build
+# 서비스 관리
+yarn kbeauty:start          # 모든 서비스 시작
+yarn kbeauty:stop           # 모든 서비스 중지
+yarn kbeauty:restart        # 모든 서비스 재시작
+yarn kbeauty:status         # 서비스 상태 확인
+```
 
-# 프로덕션 서버 실행
-yarn kbeauty:start
+#### 🛠️ 서비스 관리 스크립트
+```bash
+# 메인 관리 스크립트
+./scripts/kbeauty-manager.sh [command] [service]
 
-# 데이터베이스 마이그레이션
-yarn kbeauty:db:migrate
+# 개별 서비스 시작/중지
+yarn kbeauty:start-backend   # 백엔드만 시작
+yarn kbeauty:start-frontend  # 스토어프론트만 시작 
+yarn kbeauty:start-docker    # Docker 서비스만 시작
 
-# 데이터베이스 시드
-yarn kbeauty:db:seed
+# 모니터링
+yarn kbeauty:health         # 헬스 체크
+yarn kbeauty:ports          # 포트 사용 현황
+yarn kbeauty:logs [service] # 로그 확인
+```
 
-# 관리자 계정 생성
-yarn kbeauty:user:create
+#### 🗄️ 데이터베이스 관리
+```bash
+# 데이터베이스 관리 스크립트
+./scripts/kbeauty-db.sh [command]
+
+# 자주 사용하는 명령어
+yarn kbeauty:db-migrate     # 마이그레이션 실행
+yarn kbeauty:db-seed        # 시드 데이터 삽입
+yarn kbeauty:db-backup      # 데이터베이스 백업
+yarn kbeauty:db-connect     # 데이터베이스 연결
+yarn kbeauty:create-admin   # 관리자 계정 생성
+```
+
+#### 🔧 개발 도구 별칭
+```bash
+# 별칭 로드 (터미널에서 한 번만 실행)
+source scripts/kbeauty-aliases.sh
+
+# 사용 가능한 별칭들
+kstart-all      # 모든 서비스 시작
+kstop-all       # 모든 서비스 중지  
+kstatus         # 상태 확인
+kdev            # 개발 환경 빠른 시작
+khelp           # 도움말 확인
 ```
 
 ### 백엔드 개발

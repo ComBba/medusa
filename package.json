@@ -35,28 +35,40 @@
     "jest-environment-jsdom": "^29.7.0",
     "prettier": "^3.3.3",
     "ts-jest": "^29.2.5",
-    "typescript": "^5.6.3",
-    "turbo": "^2.3.0"
+    "turbo": "^2.3.0",
+    "typescript": "^5.6.3"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": "yarn run lint",
     "*.{md,yaml,yml}": "prettier --write"
   },
-  "scripts": {
+      "scripts": {
     "build": "yarn workspaces foreach --all run build",
     "dev": "yarn workspaces foreach --all run dev",
-    "kbeauty:dev": "concurrently \"yarn kbeauty:docker\" \"yarn kbeauty:backend\" \"yarn kbeauty:admin\"",
-    "kbeauty:docker": "docker-compose up -d postgres redis adminer minio",
-    "kbeauty:backend": "yarn workspace @medusajs/medusa dev --port 10000",
-    "kbeauty:admin": "yarn workspace @medusajs/admin dev --port 10001",
-    "kbeauty:build": "yarn build",
-    "kbeauty:start": "yarn workspace @medusajs/medusa start --port 10000",
-    "kbeauty:docker:up": "docker-compose up -d",
-    "kbeauty:docker:down": "docker-compose down",
-    "kbeauty:docker:logs": "docker-compose logs -f",
-    "kbeauty:db:migrate": "yarn workspace @medusajs/medusa migrate",
-    "kbeauty:db:seed": "yarn workspace @medusajs/medusa seed",
-    "kbeauty:user:create": "yarn workspace @medusajs/medusa user --email admin@kbeauty.market --password admin123",
+    
+    "kbeauty:quick-start": "./scripts/quick-start.sh",
+    "kbeauty:manage": "./scripts/kbeauty-manager.sh",
+    "kbeauty:db": "./scripts/kbeauty-db.sh",
+    
+    "kbeauty:start": "./scripts/kbeauty-manager.sh start all",
+    "kbeauty:stop": "./scripts/kbeauty-manager.sh stop all",
+    "kbeauty:restart": "./scripts/kbeauty-manager.sh restart all",
+    "kbeauty:status": "./scripts/kbeauty-manager.sh status",
+    "kbeauty:logs": "./scripts/kbeauty-manager.sh logs",
+    "kbeauty:health": "./scripts/kbeauty-manager.sh health",
+    "kbeauty:ports": "./scripts/kbeauty-manager.sh ports",
+    "kbeauty:reset": "./scripts/kbeauty-manager.sh reset",
+    
+    "kbeauty:start-backend": "./scripts/kbeauty-manager.sh start backend",
+    "kbeauty:start-frontend": "./scripts/kbeauty-manager.sh start storefront",
+    "kbeauty:start-docker": "./scripts/kbeauty-manager.sh start docker",
+    
+    "kbeauty:db-migrate": "./scripts/kbeauty-db.sh migrate",
+    "kbeauty:db-seed": "./scripts/kbeauty-db.sh seed",
+    "kbeauty:db-backup": "./scripts/kbeauty-db.sh backup",
+    "kbeauty:db-connect": "./scripts/kbeauty-db.sh connect",
+    "kbeauty:create-admin": "./scripts/kbeauty-db.sh create-admin",
+    
     "test": "jest --runInBand -- --testTimeout=30000"
   },
   "dependencies": {
