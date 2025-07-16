@@ -42,14 +42,12 @@
     "*.{js,jsx,ts,tsx}": "yarn run lint",
     "*.{md,yaml,yml}": "prettier --write"
   },
-      "scripts": {
+  "scripts": {
     "build": "yarn workspaces foreach --all run build",
     "dev": "yarn workspaces foreach --all run dev",
-    
     "kbeauty:quick-start": "./scripts/quick-start.sh",
     "kbeauty:manage": "./scripts/kbeauty-manager.sh",
     "kbeauty:db": "./scripts/kbeauty-db.sh",
-    
     "kbeauty:start": "./scripts/kbeauty-manager.sh start all",
     "kbeauty:stop": "./scripts/kbeauty-manager.sh stop all",
     "kbeauty:restart": "./scripts/kbeauty-manager.sh restart all",
@@ -58,17 +56,14 @@
     "kbeauty:health": "./scripts/kbeauty-manager.sh health",
     "kbeauty:ports": "./scripts/kbeauty-manager.sh ports",
     "kbeauty:reset": "./scripts/kbeauty-manager.sh reset",
-    
     "kbeauty:start-backend": "./scripts/kbeauty-manager.sh start backend",
     "kbeauty:start-frontend": "./scripts/kbeauty-manager.sh start storefront",
     "kbeauty:start-docker": "./scripts/kbeauty-manager.sh start docker",
-    
     "kbeauty:db-migrate": "./scripts/kbeauty-db.sh migrate",
     "kbeauty:db-seed": "./scripts/kbeauty-db.sh seed",
     "kbeauty:db-backup": "./scripts/kbeauty-db.sh backup",
     "kbeauty:db-connect": "./scripts/kbeauty-db.sh connect",
     "kbeauty:create-admin": "./scripts/kbeauty-db.sh create-admin",
-    
     "test": "jest --runInBand -- --testTimeout=30000"
   },
   "dependencies": {
