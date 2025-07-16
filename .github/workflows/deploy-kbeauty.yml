@@ -23,6 +23,7 @@ on:
 env:
   NODE_VERSION: '20'
   DEPLOY_HOST: '49.247.9.193'
+  DEPLOY_PORT: '17141'
   DEPLOY_PATH: '/home/barahime/github/medusa'
   SERVICE_NAME: 'kbeauty-market'
 
@@ -72,9 +73,14 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
           
+      - name: 🔑 Known Hosts 설정
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p ${{ env.DEPLOY_PORT }} ${{ env.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+          
       - name: 📡 서버에 배포
         run: |
-          ssh -o StrictHostKeyChecking=no barahime@${{ env.DEPLOY_HOST }} "
+          ssh -p ${{ env.DEPLOY_PORT }} barahime@${{ env.DEPLOY_HOST }} "
             cd ${{ env.DEPLOY_PATH }} &&
             echo '🔄 Git 업데이트 중...' &&
             git fetch origin &&
