@@ -1,0 +1,92 @@
+[32minfo[39m:    Watching filesystem to reload dev server on file change
+[32minfo[39m:    Skipping instrumentation registration. No register function found.
+redisUrl not found. A fake redis instance will be used.
+[33mwarn[39m:    Local Event Bus installed. This is not recommended for production.
+[32minfo[39m:    Locking module: Using "in-memory" as default.
+[32minfo[39m:    No job to load from /home/barahime/github/medusa/kbeauty-app/node_modules/@medusajs/medusa/dist/jobs. skipped.
+- Creating server
+✔ Server is ready on port: 10000 – 8ms
+[32minfo[39m:    Admin URL → http://localhost:10000/app
+[32mhttp[39m:    HEAD / ← - (404) - 13.579 ms
+[31merror[39m:   Publishable API key required in the request header: x-publishable-api-key. You can manage your keys in settings in the dashboard.
+MedusaError: Publishable API key required in the request header: x-publishable-api-key. You can manage your keys in settings in the dashboard.
+    at ensurePublishableApiKeyMiddleware (/home/barahime/github/medusa/kbeauty-app/node_modules/@medusajs/framework/src/http/middlewares/ensure-publishable-api-key.ts:22:19)
+    at Layer.handle [as handle_request] (/home/barahime/github/medusa/kbeauty-app/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/barahime/github/medusa/kbeauty-app/node_modules/express/lib/router/index.js:328:13)
+    at /home/barahime/github/medusa/kbeauty-app/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/barahime/github/medusa/kbeauty-app/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/barahime/github/medusa/kbeauty-app/node_modules/express/lib/router/index.js:280:10)
+    at cors (/home/barahime/github/medusa/kbeauty-app/node_modules/cors/lib/index.js:188:7)
+    at /home/barahime/github/medusa/kbeauty-app/node_modules/cors/lib/index.js:224:17
+    at originCallback (/home/barahime/github/medusa/kbeauty-app/node_modules/cors/lib/index.js:214:15)
+    at /home/barahime/github/medusa/kbeauty-app/node_modules/cors/lib/index.js:219:13 {
+  __isMedusaError: true,
+  type: 'not_allowed',
+  code: undefined,
+  date: 2025-07-16T13:24:40.434Z
+}
+[32mhttp[39m:    GET /store/regions ← - (400) - 9.040 ms
+[31merror[39m:   Publishable API key required in the request header: x-publishable-api-key. You can manage your keys in settings in the dashboard.
+MedusaError: Publishable API key required in the request header: x-publishable-api-key. You can manage your keys in settings in the dashboard.
+    at ensurePublishableApiKeyMiddleware (/home/barahime/github/medusa/kbeauty-app/node_modules/@medusajs/framework/src/http/middlewares/ensure-publishable-api-key.ts:22:19)
+    at Layer.handle [as handle_request] (/home/barahime/github/medusa/kbeauty-app/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/barahime/github/medusa/kbeauty-app/node_modules/express/lib/router/index.js:328:13)
+    at /home/barahime/github/medusa/kbeauty-app/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/barahime/github/medusa/kbeauty-app/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/barahime/github/medusa/kbeauty-app/node_modules/express/lib/router/index.js:280:10)
+    at cors (/home/barahime/github/medusa/kbeauty-app/node_modules/cors/lib/index.js:188:7)
+    at /home/barahime/github/medusa/kbeauty-app/node_modules/cors/lib/index.js:224:17
+    at originCallback (/home/barahime/github/medusa/kbeauty-app/node_modules/cors/lib/index.js:214:15)
+    at /home/barahime/github/medusa/kbeauty-app/node_modules/cors/lib/index.js:219:13 {
+  __isMedusaError: true,
+  type: 'not_allowed',
+  code: undefined,
+  date: 2025-07-16T13:24:41.948Z
+}
+[32mhttp[39m:    GET /store/regions ← - (400) - 2.336 ms
+[32mhttp[39m:    GET /app ← - (200) - 17.127 ms
+[32mhttp[39m:    GET /store/regions ← - (200) - 28.830 ms
+[32mhttp[39m:    HEAD /app ← - (403) - 1.892 ms
+[32mhttp[39m:    HEAD / ← - (404) - 1.635 ms
+[32mhttp[39m:    GET /store/customers/me?fields=%2Aorders ← - (401) - 11.517 ms
+[32mhttp[39m:    GET /store/regions ← - (200) - 17.760 ms
+[32mhttp[39m:    GET /store/collections?fields=%2Aproducts&limit=100&offset=0 ← - (200) - 8.676 ms
+[32mhttp[39m:    GET /store/collections?fields=id%2C%20handle%2C%20title&limit=100&offset=0 ← - (200) - 12.523 ms
+[32mhttp[39m:    GET /store/product-categories?fields=%2Acategory_children%2C%20%2Aproducts%2C%20%2Aparent_category%2C%20%2Aparent_category.parent_category&limit=100 ← - (200) - 21.733 ms
+[32mhttp[39m:    GET /store/customers/me?fields=%2Aorders ← - (401) - 4.646 ms
+[32mhttp[39m:    GET /store/regions ← - (200) - 12.788 ms
+[32mhttp[39m:    GET /store/products ← - (200) - 41.242 ms
+[32mhttp[39m:    GET /store/regions ← - (200) - 11.044 ms
+[32mhttp[39m:    GET /store/customers/me?fields=%2Aorders ← - (401) - 4.907 ms
+[32mhttp[39m:    GET /store/customers/me?fields=%2Aorders ← - (401) - 4.447 ms
+[32mhttp[39m:    GET /store/products?region_id=reg_01K01DTEFGM60PY0W826GBYD8E ← - (200) - 49.949 ms
+[32mhttp[39m:    GET /store/products?region_id=reg_01K01DTEFGM60PY0W826GBYD8E&limit=4 ← - (200) - 38.392 ms
+[32mhttp[39m:    GET /store/customers/me?fields=%2Aorders ← - (401) - 6.999 ms
+[32mhttp[39m:    GET /store/collections?fields=id%2C%20handle%2C%20title&limit=100&offset=0 ← - (200) - 9.929 ms
+[32mhttp[39m:    GET /store/regions ← - (200) - 6.471 ms
+[32mhttp[39m:    GET /store/collections?fields=%2Aproducts&limit=100&offset=0 ← - (200) - 5.103 ms
+[32mhttp[39m:    GET /store/product-categories?fields=%2Acategory_children%2C%20%2Aproducts%2C%20%2Aparent_category%2C%20%2Aparent_category.parent_category&limit=100 ← - (200) - 12.852 ms
+[32mhttp[39m:    GET /store/customers/me?fields=%2Aorders ← - (401) - 3.596 ms
+[32mhttp[39m:    GET /store/products?limit=100&offset=0&region_id=reg_01K01DTEFGM60PY0W826GBYD8E&fields=%2Avariants.calculated_price%2C%2Bvariants.inventory_quantity%2C%2Bmetadata%2C%2Btags&order=created_at ← - (200) - 68.338 ms
+[32mhttp[39m:    GET /store/regions ← - (200) - 9.856 ms
+[32mhttp[39m:    GET /store/customers/me?fields=%2Aorders ← - (401) - 7.007 ms
+[32mhttp[39m:    GET /store/regions ← - (200) - 11.984 ms
+[32mhttp[39m:    GET /store/collections?fields=%2Aproducts&limit=100&offset=0 ← - (200) - 8.508 ms
+[32mhttp[39m:    GET /store/collections?fields=id%2C%20handle%2C%20title&limit=100&offset=0 ← - (200) - 10.175 ms
+[32mhttp[39m:    GET /store/product-categories?fields=%2Acategory_children%2C%20%2Aproducts%2C%20%2Aparent_category%2C%20%2Aparent_category.parent_category&limit=100 ← - (200) - 16.042 ms
+[32mhttp[39m:    GET /store/products?limit=100&offset=0&region_id=reg_01K01DTEFGM60PY0W826GBYD8E&fields=handle ← - (200) - 33.313 ms
+[32mhttp[39m:    GET /store/products?limit=12&offset=0&region_id=reg_01K01DTEFGM60PY0W826GBYD8E&fields=%2Avariants.calculated_price%2C%2Bvariants.inventory_quantity%2C%2Bmetadata%2C%2Btags&handle=sweatpants ← - (200) - 37.581 ms
+[32mhttp[39m:    GET /store/regions/reg_01K01DTEFGM60PY0W826GBYD8E ← - (200) - 11.673 ms
+[32mhttp[39m:    GET /store/products?limit=12&offset=0&region_id=reg_01K01DTEFGM60PY0W826GBYD8E&fields=%2Avariants.calculated_price%2C%2Bvariants.inventory_quantity%2C%2Bmetadata%2C%2Btags&is_giftcard=false ← - (200) - 83.951 ms
+[32mhttp[39m:    GET /store/products?limit=12&offset=0&region_id=reg_01K01DTEFGM60PY0W826GBYD8E&fields=%2Avariants.calculated_price%2C%2Bvariants.inventory_quantity%2C%2Bmetadata%2C%2Btags&id%5B0%5D=prod_01K01DTEK8HX3JS9GPCRT3TM6G ← - (200) - 78.550 ms
+[32mhttp[39m:    GET /store/customers/me?fields=%2Aorders ← - (401) - 4.045 ms
+[32mhttp[39m:    GET /store/customers/me?fields=%2Aorders ← - (401) - 3.914 ms
+[32mhttp[39m:    GET /store/orders?limit=10&offset=0&order=-created_at&fields=%2Aitems%2C%2Bitems.metadata%2C%2Aitems.variant%2C%2Aitems.product ← - (401) - 4.587 ms
+[32mhttp[39m:    GET /store/customers/me?fields=%2Aorders ← - (401) - 4.423 ms
+[32mhttp[39m:    GET /store/regions ← - (200) - 9.684 ms
+[32mhttp[39m:    GET /store/regions ← - (200) - 8.635 ms
+[32mhttp[39m:    GET /store/customers/me?fields=%2Aorders ← - (401) - 4.545 ms
+[32mhttp[39m:    GET /store/collections?fields=%2Aproducts&limit=100&offset=0 ← - (200) - 6.261 ms
+[32mhttp[39m:    GET /store/collections?fields=id%2C%20handle%2C%20title&limit=100&offset=0 ← - (200) - 6.403 ms
+[32mhttp[39m:    GET /store/product-categories?fields=%2Acategory_children%2C%20%2Aproducts%2C%20%2Aparent_category%2C%20%2Aparent_category.parent_category&limit=100 ← - (200) - 10.737 ms
+[32mhttp[39m:    GET /store/products?limit=100&offset=0&region_id=reg_01K01DTEFGM60PY0W826GBYD8E&fields=%2Avariants.calculated_price%2C%2Bvariants.inventory_quantity%2C%2Bmetadata%2C%2Btags ← - (200) - 63.180 ms

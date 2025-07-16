@@ -12,22 +12,26 @@ export default async function Footer() {
   const productCategories = await listCategories()
 
   return (
-    <footer className="border-t border-ui-border-base w-full">
+    <footer className="border-t border-ui-border-base w-full bg-gradient-to-r from-pink-50 to-purple-50">
       <div className="content-container flex flex-col w-full">
         <div className="flex flex-col gap-y-6 xsmall:flex-row items-start justify-between py-40">
           <div>
             <LocalizedClientLink
               href="/"
-              className="txt-compact-xlarge-plus text-ui-fg-subtle hover:text-ui-fg-base uppercase"
+              className="txt-compact-xlarge-plus text-pink-600 hover:text-pink-700 uppercase font-bold"
             >
-              Medusa Store
+              🌸 KBeauty.Market
             </LocalizedClientLink>
+            <p className="text-sm text-gray-600 mt-3 max-w-xs">
+              한국 화장품을 세계로 연결하는<br />
+              글로벌 마켓플레이스
+            </p>
           </div>
           <div className="text-small-regular gap-10 md:gap-x-16 grid grid-cols-2 sm:grid-cols-3">
             {productCategories && productCategories?.length > 0 && (
               <div className="flex flex-col gap-y-2">
-                <span className="txt-small-plus txt-ui-fg-base">
-                  Categories
+                <span className="txt-small-plus txt-ui-fg-base font-semibold">
+                  카테고리
                 </span>
                 <ul
                   className="grid grid-cols-1 gap-2"
@@ -84,8 +88,8 @@ export default async function Footer() {
             )}
             {collections && collections.length > 0 && (
               <div className="flex flex-col gap-y-2">
-                <span className="txt-small-plus txt-ui-fg-base">
-                  Collections
+                <span className="txt-small-plus txt-ui-fg-base font-semibold">
+                  컬렉션
                 </span>
                 <ul
                   className={clx(
@@ -109,37 +113,45 @@ export default async function Footer() {
               </div>
             )}
             <div className="flex flex-col gap-y-2">
-              <span className="txt-small-plus txt-ui-fg-base">Medusa</span>
+              <span className="txt-small-plus txt-ui-fg-base font-semibold">글로벌 마켓플레이스</span>
               <ul className="grid grid-cols-1 gap-y-2 text-ui-fg-subtle txt-small">
                 <li>
                   <a
-                    href="https://github.com/medusajs"
+                    href="https://amazon.com"
                     target="_blank"
                     rel="noreferrer"
                     className="hover:text-ui-fg-base"
                   >
-                    GitHub
+                    Amazon 연동
                   </a>
                 </li>
                 <li>
                   <a
-                    href="https://docs.medusajs.com"
+                    href="https://qoo10.com"
                     target="_blank"
                     rel="noreferrer"
                     className="hover:text-ui-fg-base"
                   >
-                    Documentation
+                    Qoo10 연동
                   </a>
                 </li>
                 <li>
                   <a
-                    href="https://github.com/medusajs/nextjs-starter-medusa"
+                    href="https://mercadolibre.com"
                     target="_blank"
                     rel="noreferrer"
                     className="hover:text-ui-fg-base"
                   >
-                    Source code
+                    Mercado Libre 연동
                   </a>
+                </li>
+                <li>
+                  <LocalizedClientLink
+                    className="hover:text-ui-fg-base"
+                    href="/brands"
+                  >
+                    브랜드 입점 문의
+                  </LocalizedClientLink>
                 </li>
               </ul>
             </div>
@@ -147,9 +159,11 @@ export default async function Footer() {
         </div>
         <div className="flex w-full mb-16 justify-between text-ui-fg-muted">
           <Text className="txt-compact-small">
-            © {new Date().getFullYear()} Medusa Store. All rights reserved.
+            © {new Date().getFullYear()} KBeauty.Market. 한국 화장품 글로벌 마켓플레이스.
           </Text>
-          <MedusaCTA />
+          <div className="text-xs text-gray-500">
+            <span>Powered by Medusa.js</span>
+          </div>
         </div>
       </div>
     </footer>

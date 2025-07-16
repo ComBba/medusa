@@ -6,9 +6,15 @@ import { listCollections } from "@lib/data/collections"
 import { getRegion } from "@lib/data/regions"
 
 export const metadata: Metadata = {
-  title: "Medusa Next.js Starter Template",
+  title: "🌸 KBeauty.Market - 한국 화장품 글로벌 마켓플레이스",
   description:
-    "A performant frontend ecommerce starter template with Next.js 15 and Medusa.",
+    "K-Beauty를 세계로! Amazon, Qoo10, Mercado Libre를 통해 50개 한국 화장품 브랜드와 연결하는 글로벌 마켓플레이스입니다.",
+  keywords: "K-Beauty, 한국화장품, 글로벌마켓플레이스, Amazon, Qoo10, 화장품쇼핑몰",
+  openGraph: {
+    title: "🌸 KBeauty.Market - 한국 화장품 글로벌 마켓플레이스",
+    description: "K-Beauty를 세계로! 50개 한국 화장품 브랜드와 연결하는 글로벌 마켓플레이스",
+    type: "website",
+  },
 }
 
 export default async function Home(props: {
