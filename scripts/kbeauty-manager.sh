@@ -116,7 +116,16 @@ is_process_running() {
 # 함수: 포트가 사용 중인지 확인
 is_port_in_use() {
     local port="$1"
-    lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1
+    # 여러 방법으로 포트 사용 확인 (권한 문제 대응)
+    if netstat -tulpn 2>/dev/null | grep -q ":$port "; then
+        return 0
+    elif ss -tulpn 2>/dev/null | grep -q ":$port "; then
+        return 0
+    elif lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 # 함수: Docker 서비스 시작
