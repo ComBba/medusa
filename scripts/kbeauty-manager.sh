@@ -15,8 +15,9 @@ CYAN='\033[0;36m'
 WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
-# 프로젝트 경로
-PROJECT_ROOT="/home/barahime/github/medusa"
+# 프로젝트 경로 (스크립트 실행 위치 기준)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BACKEND_DIR="$PROJECT_ROOT/kbeauty-app"
 STOREFRONT_DIR="$PROJECT_ROOT/kbeauty-app-storefront"
 
@@ -28,9 +29,9 @@ mkdir -p "$PID_DIR"
 LOG_DIR="$PROJECT_ROOT/.logs"
 mkdir -p "$LOG_DIR"
 
-# 서비스 포트 정의
-BACKEND_PORT=10000
-STOREFRONT_PORT=10004
+# 서비스 포트 정의 (현재 실제 사용 포트)
+BACKEND_PORT=9000
+STOREFRONT_PORT=8000
 POSTGRES_PORT=10002
 REDIS_PORT=10003
 ADMINER_PORT=10008
@@ -71,20 +72,29 @@ show_usage() {
     echo -e "${WHITE}서비스:${NC}"
     echo -e "  ${BLUE}all${NC}         - 모든 서비스"
     echo -e "  ${BLUE}docker${NC}      - Docker 서비스 (DB, Redis, MinIO 등)"
-    echo -e "  ${BLUE}backend${NC}     - 백엔드 API 서버 (포트 $BACKEND_PORT)"
-    echo -e "  ${BLUE}storefront${NC}  - 스토어프론트 (포트 $STOREFRONT_PORT)"
+    echo -e "  ${BLUE}backend${NC}     - Medusa v2 백엔드 + 관리자 (포트 $BACKEND_PORT)"
+    echo -e "  ${BLUE}storefront${NC}  - Next.js 스토어프론트 (포트 $STOREFRONT_PORT)"
     echo -e "  ${BLUE}postgres${NC}    - PostgreSQL (포트 $POSTGRES_PORT)"
     echo -e "  ${BLUE}redis${NC}       - Redis (포트 $REDIS_PORT)"
     echo -e "  ${BLUE}adminer${NC}     - Adminer (포트 $ADMINER_PORT)"
     echo -e "  ${BLUE}minio${NC}       - MinIO (포트 $MINIO_API_PORT, $MINIO_CONSOLE_PORT)"
     echo ""
     echo -e "${WHITE}예시:${NC}"
-    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh start all${NC}        # 모든 서비스 시작"
-    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh restart backend${NC}  # 백엔드만 재시작"
-    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh logs storefront${NC}  # 스토어프론트 로그 확인"
-    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh status${NC}           # 전체 상태 확인"
-    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh cicd${NC}             # CI/CD 시스템 상태"
-    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh deploy${NC}           # 수동 배포 실행"
+    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh start all${NC}          # 모든 서비스 시작"
+    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh start-all${NC}          # 별칭: 모든 서비스 시작"
+    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh restart backend${NC}    # 백엔드만 재시작"
+    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh logs storefront${NC}    # 스토어프론트 로그 확인"
+    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh status${NC}             # 전체 상태 확인"
+    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh cicd${NC}               # CI/CD 시스템 상태"
+    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh deploy${NC}             # 수동 배포 실행"
+    echo ""
+    echo -e "${WHITE}빠른 별칭:${NC}"
+    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh start-all${NC}          # 모든 서비스 시작"
+    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh stop-all${NC}           # 모든 서비스 중지"
+    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh restart-all${NC}        # 모든 서비스 재시작"
+    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh start-backend${NC}      # 백엔드만 시작"
+    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh start-frontend${NC}     # 스토어프론트만 시작"
+    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh start-docker${NC}       # Docker 서비스만 시작"
     echo ""
 }
 
@@ -179,7 +189,8 @@ start_storefront() {
     fi
     
     cd "$STOREFRONT_DIR"
-    nohup yarn dev --port=$STOREFRONT_PORT > "$log_file" 2>&1 &
+    # Next.js dev 서버는 package.json에서 포트 설정됨 (-p 8000)
+    nohup yarn dev > "$log_file" 2>&1 &
     local pid=$!
     echo $pid > "$pid_file"
     
@@ -221,7 +232,22 @@ check_service_status() {
     if is_process_running "$pid_file"; then
         local pid=$(cat "$pid_file")
         if is_port_in_use "$port"; then
-            echo -e "${GREEN}✅ 실행 중 (PID: $pid, 포트: $port)${NC}"
+            # 추가적으로 HTTP 응답 확인 (storefront/backend의 경우)
+            if [[ "$service_name" == "backend" ]]; then
+                if curl -s "http://localhost:$port/health" > /dev/null 2>&1; then
+                    echo -e "${GREEN}✅ 실행 중 (PID: $pid, 포트: $port, 응답: 정상)${NC}"
+                else
+                    echo -e "${YELLOW}⚠️  실행 중이나 API 응답 없음 (PID: $pid, 포트: $port)${NC}"
+                fi
+            elif [[ "$service_name" == "storefront" ]]; then
+                if curl -s "http://localhost:$port" > /dev/null 2>&1; then
+                    echo -e "${GREEN}✅ 실행 중 (PID: $pid, 포트: $port, 응답: 정상)${NC}"
+                else
+                    echo -e "${YELLOW}⚠️  시작 중... (PID: $pid, 포트: $port, 준비 대기)${NC}"
+                fi
+            else
+                echo -e "${GREEN}✅ 실행 중 (PID: $pid, 포트: $port)${NC}"
+            fi
         else
             echo -e "${YELLOW}⚠️  프로세스 실행 중이지만 포트 연결 안됨 (PID: $pid)${NC}"
         fi
@@ -503,6 +529,59 @@ main() {
     local service="${2:-all}"
     
     case "$command" in
+        # 빠른 별칭들
+        "start-all")
+            command="start"
+            service="all"
+            ;&
+        "stop-all")
+            if [[ "$command" == "stop-all" ]]; then
+                command="stop"
+                service="all"
+            fi
+            ;&
+        "restart-all")
+            if [[ "$command" == "restart-all" ]]; then
+                command="restart"
+                service="all"
+            fi
+            ;&
+        "start-backend")
+            if [[ "$command" == "start-backend" ]]; then
+                command="start"
+                service="backend"
+            fi
+            ;&
+        "start-frontend")
+            if [[ "$command" == "start-frontend" ]]; then
+                command="start"
+                service="storefront"
+            fi
+            ;&
+        "start-docker")
+            if [[ "$command" == "start-docker" ]]; then
+                command="start"
+                service="docker"
+            fi
+            ;&
+        "stop-backend")
+            if [[ "$command" == "stop-backend" ]]; then
+                command="stop"
+                service="backend"
+            fi
+            ;&
+        "stop-frontend")
+            if [[ "$command" == "stop-frontend" ]]; then
+                command="stop"
+                service="storefront"
+            fi
+            ;&
+        "stop-docker")
+            if [[ "$command" == "stop-docker" ]]; then
+                command="stop"
+                service="docker"
+            fi
+            ;&
         "start")
             print_header
             case "$service" in
