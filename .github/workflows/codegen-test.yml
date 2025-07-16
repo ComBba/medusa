@@ -1,40 +1,5 @@
-#name: OAS Codegen Build Check - BETA
-#on:
-#  pull_request:
-#    paths-ignore:
-#      - "docs/**"
-#      - "www/**"
+# 이 워크플로우는 kbeauty 프로젝트에서는 필요하지 않습니다.
+# 원본 Medusa.js 프로젝트의 코드 생성 테스트용 워크플로우였으나,
+# kbeauty 프로젝트에서는 사용하지 않으므로 비활성화됩니다.
 #
-#jobs:
-#  codegen-test:
-#    runs-on: ubuntu-latest
-#    env:
-#      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-#      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-#    steps:
-#      - name: Cancel Previous Runs
-#        uses: styfle/cancel-workflow-action@0.11.0
-#        with:
-#          access_token: ${{ github.token }}
-#
-#      - name: Checkout
-#        uses: actions/checkout@v3
-#        with:
-#          fetch-depth: 0
-#
-#      - name: Setup Node.js environment
-#        uses: actions/setup-node@v4
-#        with:
-#          node-version: "16.10.0"
-#          cache: "yarn"
-#
-#      - name: Install dependencies
-#        uses: ./.github/actions/cache-deps
-#        with:
-#          extension: codegen
-#
-#      - name: Build Packages - Force
-#        run: yarn build --force
-#
-#      - name: Assert latest codegen build committed
-#        run: ./scripts/assert-codegen-build-committed-actions.sh
+# 원본 파일은 codegen-test.yml.disabled로 백업되었습니다.

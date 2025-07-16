@@ -1,9 +1,13 @@
 name: CLI Pipeline
 on:
   pull_request:
+    branches-ignore:
+      - 'kbeauty/**'  # kbeauty 브랜치에서는 실행하지 않음
 
 jobs:
   test-cli-with-database:
+    # kbeauty 관련 브랜치에서는 건너뛰기
+    if: ${{ !startsWith(github.head_ref, 'kbeauty/') && !startsWith(github.base_ref, 'kbeauty/') }}
     env:
       NODE_ENV: CI
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}

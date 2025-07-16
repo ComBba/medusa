@@ -1,12 +1,16 @@
 name: OAS Comments Format Validation
 on:
   pull_request:
+    branches-ignore:
+      - 'kbeauty/**'  # kbeauty 브랜치에서는 실행하지 않음
     paths:
       - www/utils/generated/oas-output/**
 
 jobs:
   docs-test:
     runs-on: ubuntu-latest
+    # kbeauty 관련 브랜치에서는 건너뛰기
+    if: ${{ !startsWith(github.head_ref, 'kbeauty/') && !startsWith(github.base_ref, 'kbeauty/') }}
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}

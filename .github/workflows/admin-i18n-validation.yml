@@ -2,12 +2,16 @@ name: i18n Validation
 
 on:
   pull_request:
+    branches-ignore:
+      - 'kbeauty/**'  # kbeauty 브랜치에서는 실행하지 않음
     paths:
       - packages/admin/dashboard/src/i18n/translations/**
 
 jobs:
   i18n-validation-admin-dashboard:
     runs-on: ubuntu-latest
+    # kbeauty 관련 브랜치에서는 건너뛰기
+    if: ${{ !startsWith(github.head_ref, 'kbeauty/') && !startsWith(github.base_ref, 'kbeauty/') }}
 
     steps:
       - name: Checkout repository

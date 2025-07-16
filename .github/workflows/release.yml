@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - develop
+    branches-ignore:
+      - 'kbeauty/**'  # kbeauty 브랜치에서는 실행하지 않음
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -11,6 +13,8 @@ jobs:
   release:
     name: Version packages PR
     runs-on: ubuntu-latest
+    # kbeauty 관련 브랜치에서는 건너뛰기
+    if: ${{ !startsWith(github.ref_name, 'kbeauty/') }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3

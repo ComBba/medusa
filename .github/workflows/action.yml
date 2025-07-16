@@ -4,14 +4,20 @@ on:
     branches:
       - develop
       - v1.x
+    branches-ignore:
+      - 'kbeauty/**'  # kbeauty 브랜치에서는 실행하지 않음
   pull_request:
     branches:
       - develop
       - v1.x
+    branches-ignore:
+      - 'kbeauty/**'  # kbeauty 브랜치에서는 실행하지 않음
 
 jobs:
   setup:
     runs-on: ubuntu-latest
+    # kbeauty 관련 브랜치에서는 건너뛰기
+    if: ${{ !startsWith(github.ref_name, 'kbeauty/') && !startsWith(github.head_ref, 'kbeauty/') && !startsWith(github.base_ref, 'kbeauty/') }}
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
