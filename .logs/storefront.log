@@ -202,3 +202,73 @@ Initiating Medusa client with default headers:
   INVALID_NODE_TYPE_ERR: 24,
   DATA_CLONE_ERR: 25
 }
+Performing request to:
+ URL: http://localhost:10000/store/collections?fields=id%2C%20handle%2C%20title&limit=100&offset=0
+ Headers: {
+  "accept": "application/json",
+  "content-type": "application/json",
+  "x-publishable-api-key": "pk_72a17cc3cdde540098bac83d7ecf8edc6e195d3c62c49af933872a10f5c097e4",
+  "authorization": "<REDACTED>"
+}
+
+Performing request to:
+ URL: http://localhost:10000/store/customers/me?fields=%2Aorders
+ Headers: {
+  "accept": "application/json",
+  "content-type": "application/json",
+  "x-publishable-api-key": "pk_72a17cc3cdde540098bac83d7ecf8edc6e195d3c62c49af933872a10f5c097e4",
+  "authorization": "<REDACTED>"
+}
+
+Received response with status 200
+
+Received response with status 401
+
+Performing request to:
+ URL: http://localhost:10000/store/regions
+ Headers: {
+  "accept": "application/json",
+  "content-type": "application/json",
+  "x-publishable-api-key": "pk_72a17cc3cdde540098bac83d7ecf8edc6e195d3c62c49af933872a10f5c097e4",
+  "authorization": "<REDACTED>"
+}
+
+Performing request to:
+ URL: http://localhost:10000/store/collections?fields=%2Aproducts&limit=100&offset=0
+ Headers: {
+  "accept": "application/json",
+  "content-type": "application/json",
+  "x-publishable-api-key": "pk_72a17cc3cdde540098bac83d7ecf8edc6e195d3c62c49af933872a10f5c097e4",
+  "authorization": "<REDACTED>"
+}
+
+Received response with status 200
+
+Received response with status 200
+
+Performing request to:
+ URL: http://localhost:10000/store/product-categories?fields=%2Acategory_children%2C%20%2Aproducts%2C%20%2Aparent_category%2C%20%2Aparent_category.parent_category&limit=100
+ Headers: {
+  "accept": "application/json",
+  "content-type": "application/json",
+  "x-publishable-api-key": "pk_72a17cc3cdde540098bac83d7ecf8edc6e195d3c62c49af933872a10f5c097e4",
+  "authorization": "<REDACTED>"
+}
+
+Received response with status 200
+
+ GET /dk 200 in 103ms
+ │ GET http://localhost:10000/store/collections?fields=id%2C%20handle%2C%20title&limit=100&offset=0 200 in 1ms (cache hit)
+ │ GET http://localhost:10000/store/customers/me?fields=%2Aorders 401 in 12ms (cache skip)
+ │ │ Cache skipped reason: (cache-control: no-cache (hard refresh))
+ │ GET http://localhost:10000/store/regions 200 in 1ms (cache hit)
+ │ GET http://localhost:10000/store/collections?fields=%2Aproducts&limit=100&offset=0 200 in 1ms (cache hit)
+ │ GET http://localhost:10000/store/product-categories?fields=%2Acategory_children%2C%20%2Aproducts%2C%20%2Aparent_category%2C%20%2Aparent_category.parent_category&limit=100 200 in 0ms (cache hit)
+Initiating Medusa client with default headers:
+ {
+  "accept": "application/json",
+  "content-type": "application/json",
+  "x-publishable-api-key": "pk_72a17cc3cdde540098bac83d7ecf8edc6e195d3c62c49af933872a10f5c097e4",
+  "authorization": "<REDACTED>"
+}
+

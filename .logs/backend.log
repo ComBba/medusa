@@ -90,3 +90,4 @@ MedusaError: Publishable API key required in the request header: x-publishable-a
 [32mhttp[39m:    GET /store/collections?fields=id%2C%20handle%2C%20title&limit=100&offset=0 ← - (200) - 6.403 ms
 [32mhttp[39m:    GET /store/product-categories?fields=%2Acategory_children%2C%20%2Aproducts%2C%20%2Aparent_category%2C%20%2Aparent_category.parent_category&limit=100 ← - (200) - 10.737 ms
 [32mhttp[39m:    GET /store/products?limit=100&offset=0&region_id=reg_01K01DTEFGM60PY0W826GBYD8E&fields=%2Avariants.calculated_price%2C%2Bvariants.inventory_quantity%2C%2Bmetadata%2C%2Btags ← - (200) - 63.180 ms
+[32mhttp[39m:    GET /store/customers/me?fields=%2Aorders ← - (401) - 3.609 ms
