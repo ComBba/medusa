@@ -1,0 +1,195 @@
+name: 🌸 Deploy KBeauty.Market
+
+on:
+  push:
+    branches: [ kbeauty/main ]
+  pull_request:
+    branches: [ kbeauty/main ]
+  schedule:
+    # 매일 오전 9시(KST)에 자동 업데이트 체크 (UTC 00:00)
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    # 수동 트리거 허용
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+env:
+  NODE_VERSION: '20'
+  DEPLOY_HOST: '49.247.9.193'
+  DEPLOY_PATH: '/home/barahime/github/medusa'
+  SERVICE_NAME: 'kbeauty-market'
+
+jobs:
+  test:
+    name: 🧪 테스트 및 빌드 검증
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        
+      - name: 🟢 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          
+      - name: 📦 의존성 설치
+        run: |
+          yarn install --frozen-lockfile
+          
+      - name: 🔨 백엔드 빌드 테스트
+        run: |
+          cd kbeauty-app
+          yarn build
+          
+      - name: 🔨 스토어프론트 빌드 테스트
+        run: |
+          cd kbeauty-app-storefront
+          yarn build
+
+  deploy:
+    name: 🚀 프로덕션 배포
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/kbeauty/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: 🔐 SSH 키 설정
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+          
+      - name: 📡 서버에 배포
+        run: |
+          ssh -o StrictHostKeyChecking=no barahime@${{ env.DEPLOY_HOST }} "
+            cd ${{ env.DEPLOY_PATH }} &&
+            echo '🔄 Git 업데이트 중...' &&
+            git fetch origin &&
+            git reset --hard origin/kbeauty/main &&
+            
+            echo '📦 의존성 업데이트 중...' &&
+            yarn install &&
+            
+            echo '🔨 백엔드 빌드 중...' &&
+            cd kbeauty-app &&
+            yarn build &&
+            cd .. &&
+            
+            echo '🔨 스토어프론트 빌드 중...' &&
+            cd kbeauty-app-storefront &&
+            yarn build &&
+            cd .. &&
+            
+            echo '🗄️ 데이터베이스 마이그레이션...' &&
+            ./scripts/kbeauty-db.sh migrate &&
+            
+            echo '🔄 서비스 재시작 중...' &&
+            ./scripts/kbeauty-manager.sh restart all &&
+            
+            echo '✅ 배포 완료! 서비스 상태 확인 중...' &&
+            sleep 10 &&
+            ./scripts/kbeauty-manager.sh status &&
+            
+            echo '🌐 서비스 연결 테스트...' &&
+            curl -f https://kbeauty.market || echo '⚠️ HTTPS 연결 테스트 실패' &&
+            
+            echo '🎉 KBeauty.Market 배포 성공!'
+          "
+          
+      - name: 📊 배포 결과 알림
+        if: always()
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "🎉 KBeauty.Market 배포 성공!"
+            echo "🌐 접속 URL: https://kbeauty.market"
+          else
+            echo "❌ 배포 실패 - 로그를 확인해주세요"
+          fi
+
+  health-check:
+    name: 🏥 서비스 헬스 체크
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: always()
+    
+    steps:
+      - name: 🌐 서비스 연결 테스트
+        run: |
+          echo "🔍 KBeauty.Market 서비스 상태 확인 중..."
+          
+          # HTTPS 메인 사이트 테스트
+          if curl -k -f -s https://kbeauty.market >/dev/null; then
+            echo "✅ 메인 사이트: https://kbeauty.market"
+          else
+            echo "❌ 메인 사이트 연결 실패"
+          fi
+          
+          # API 서버 테스트
+          if curl -k -f -s https://api.kbeauty.market >/dev/null; then
+            echo "✅ API 서버: https://api.kbeauty.market"
+          else
+            echo "❌ API 서버 연결 실패"
+          fi
+          
+          # 데이터베이스 관리 도구 테스트
+          if curl -f -s https://db.kbeauty.market >/dev/null; then
+            echo "✅ 데이터베이스: https://db.kbeauty.market"
+          else
+            echo "❌ 데이터베이스 연결 실패"
+          fi
+          
+          echo "🎯 헬스 체크 완료"
+
+  scheduled-update:
+    name: 📅 정기 업데이트 체크
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: 🔍 업데이트 확인
+        run: |
+          echo "🔍 새로운 커밋 확인 중..."
+          git fetch origin
+          
+          LOCAL_COMMIT=$(git rev-parse HEAD)
+          REMOTE_COMMIT=$(git rev-parse origin/kbeauty/main)
+          
+          if [ "$LOCAL_COMMIT" != "$REMOTE_COMMIT" ]; then
+            echo "✨ 새로운 업데이트 발견! 자동 배포를 트리거합니다."
+            echo "trigger_deploy=true" >> $GITHUB_ENV
+          else
+            echo "📄 변경사항 없음. 스킵합니다."
+          fi
+          
+      - name: 🚀 자동 배포 트리거
+        if: env.trigger_deploy == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deploy-kbeauty.yml',
+              ref: 'kbeauty/main',
+              inputs: {
+                environment: 'production'
+              }
+            }); 
