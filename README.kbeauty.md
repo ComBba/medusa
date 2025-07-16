@@ -213,3 +213,15 @@ khelp           # 도움말 확인
 ## 📄 라이선스
 
 이 프로젝트는 MIT 라이선스 하에 배포됩니다. # 배포 테스트 Wed 16 Jul 2025 02:03:49 PM UTC
+
+---
+
+## 🚀 CI/CD 자동 배포 시스템 설정 완료!
+
+✅ **GitHub Actions 워크플로우 설정 완료**
+✅ **SSH 키 배포 스크립트 설정 완료** 
+✅ **GitHub Secrets (DEPLOY_SSH_KEY) 설정 완료**
+✅ **자동 배포 시스템 활성화됨!**
+
+kbeauty/main 브랜치에 push하면 자동으로 서버에 배포됩니다! 🎉
+서비스 URL: https://kbeauty.market
