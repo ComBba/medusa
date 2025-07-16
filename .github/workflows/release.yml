@@ -1,44 +1,18 @@
-name: Release
+# 이 워크플로우는 kbeauty 프로젝트에서는 필요하지 않습니다.
+# 원본 Medusa.js 프로젝트의 릴리즈 워크플로우였으나,
+# kbeauty 프로젝트에서는 사용하지 않으므로 비활성화됩니다.
 
+name: Release (Disabled for kbeauty)
+
+# 절대 실행되지 않도록 조건 설정
 on:
-  push:
-    branches:
-      - develop
-    branches-ignore:
-      - 'kbeauty/**'  # kbeauty 브랜치에서는 실행하지 않음
-
-concurrency: ${{ github.workflow }}-${{ github.ref }}
+  workflow_dispatch:  # 수동 실행만 가능
 
 jobs:
-  release:
-    name: Version packages PR
+  disabled:
     runs-on: ubuntu-latest
-    # kbeauty 관련 브랜치에서는 건너뛰기
-    if: ${{ !startsWith(github.ref_name, 'kbeauty/') }}
+    # 항상 건너뛰기
+    if: false
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Creating .npmrc
-        run: |
-          cat << EOF > "$HOME/.npmrc"
-            //registry.npmjs.org/:_authToken=$NPM_TOKEN
-          EOF
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Install Dependencies
-        run: yarn
-
-      - name: Build packages
-        run: yarn build
-
-      - name: Create Release Pull Request
-        uses: changesets/action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Disabled
+        run: echo "This workflow is disabled for kbeauty project"
