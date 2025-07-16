@@ -1,6 +1,7 @@
 import { listCategories } from "@lib/data/categories"
 import { listCollections } from "@lib/data/collections"
 import { Text, clx } from "@medusajs/ui"
+import { formatToKST, formatDateSimple, formatRelativeTime } from "@lib/util/format-time"
 
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import MedusaCTA from "@modules/layout/components/medusa-cta"
@@ -10,6 +11,16 @@ export default async function Footer() {
     fields: "*products",
   })
   const productCategories = await listCategories()
+
+  // 환경변수에서 빌드 정보 가져오기
+  const gitInfo = {
+    commitHash: process.env.NEXT_PUBLIC_GIT_COMMIT_HASH || 'unknown',
+    commitMessage: process.env.NEXT_PUBLIC_GIT_COMMIT_MESSAGE || 'unknown',
+    commitDate: process.env.NEXT_PUBLIC_GIT_COMMIT_DATE || 'unknown',
+    branch: process.env.NEXT_PUBLIC_GIT_BRANCH || 'unknown',
+    buildTime: process.env.NEXT_PUBLIC_BUILD_TIME || 'unknown',
+    githubUrl: process.env.NEXT_PUBLIC_GITHUB_URL || 'https://github.com/ComBba/medusa'
+  }
 
   return (
     <footer className="border-t border-ui-border-base w-full bg-gradient-to-r from-pink-50 to-purple-50">
@@ -157,12 +168,61 @@ export default async function Footer() {
             </div>
           </div>
         </div>
-        <div className="flex w-full mb-16 justify-between text-ui-fg-muted">
-          <Text className="txt-compact-small">
-            © {new Date().getFullYear()} KBeauty.Market. 한국 화장품 글로벌 마켓플레이스.
-          </Text>
-          <div className="text-xs text-gray-500">
-            <span>Powered by Medusa.js</span>
+        
+        {/* 시스템 정보 및 Copyright 섹션 */}
+        <div className="border-t border-ui-border-base pt-6 pb-16">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            {/* Copyright */}
+            <div className="flex flex-col gap-1">
+              <Text className="txt-compact-small font-medium">
+                © {new Date().getFullYear()} KBeauty.Market. 한국 화장품 글로벌 마켓플레이스.
+              </Text>
+              <Text className="text-xs text-gray-500">
+                Powered by Medusa.js | 🎯 Q4 2025 목표: 50개 K-Beauty 브랜드 연동
+              </Text>
+            </div>
+            
+            {/* 시스템 정보 */}
+            <div className="flex flex-col gap-2 text-xs text-gray-500 lg:text-right">
+              <div className="flex flex-col lg:items-end gap-1">
+                <div className="flex items-center gap-2">
+                  <span>🔗</span>
+                  <a
+                    href={`${gitInfo.githubUrl}/commit/${gitInfo.commitHash}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-pink-600 transition-colors font-mono"
+                    title={gitInfo.commitMessage}
+                  >
+                    {gitInfo.commitHash}
+                  </a>
+                  <span>({gitInfo.branch})</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>📅</span>
+                  <span title="커밋 시간 (KST)">
+                    커밋: {gitInfo.commitDate !== 'unknown' ? formatToKST(gitInfo.commitDate) : 'unknown'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>🚀</span>
+                  <span title="배포 시간 (KST)">
+                    배포: {gitInfo.buildTime !== 'unknown' ? formatToKST(gitInfo.buildTime) : 'unknown'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>🏠</span>
+                  <a
+                    href={gitInfo.githubUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-pink-600 transition-colors"
+                  >
+                    GitHub Repository
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
