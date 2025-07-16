@@ -61,6 +61,7 @@ show_usage() {
     echo -e "  ${GREEN}logs${NC}      - 서비스 로그 확인"
     echo -e "  ${GREEN}health${NC}    - 서비스 헬스 체크"
     echo -e "  ${GREEN}reset${NC}     - 개발 환경 리셋"
+    echo -e "  ${GREEN}cleanup${NC}   - 포트 충돌 정리"
     echo -e "  ${GREEN}ports${NC}     - 포트 사용 현황 확인"
     echo ""
     echo -e "${WHITE}CI/CD 명령어:${NC}"
@@ -154,10 +155,13 @@ stop_docker() {
     fi
 }
 
-# 함수: 백엔드 서버 시작
+# 함수: 백엔드 시작
 start_backend() {
     local pid_file="$PID_DIR/backend.pid"
     local log_file="$LOG_DIR/backend.log"
+    
+    # 기존 프로세스 정리
+    cleanup_service_processes "backend" "$BACKEND_PORT"
     
     if is_process_running "$pid_file"; then
         echo -e "${YELLOW}⚠️  백엔드 서버가 이미 실행 중입니다.${NC}"
@@ -172,7 +176,7 @@ start_backend() {
     fi
     
     cd "$BACKEND_DIR"
-    nohup yarn dev --port=$BACKEND_PORT > "$log_file" 2>&1 &
+    nohup yarn dev > "$log_file" 2>&1 &
     local pid=$!
     echo $pid > "$pid_file"
     
@@ -184,6 +188,9 @@ start_backend() {
 start_storefront() {
     local pid_file="$PID_DIR/storefront.pid"
     local log_file="$LOG_DIR/storefront.log"
+    
+    # 기존 프로세스 정리
+    cleanup_service_processes "storefront" "$STOREFRONT_PORT"
     
     if is_process_running "$pid_file"; then
         echo -e "${YELLOW}⚠️  스토어프론트가 이미 실행 중입니다.${NC}"
@@ -205,6 +212,54 @@ start_storefront() {
     
     echo -e "${GREEN}✅ 스토어프론트가 시작되었습니다 (PID: $pid, 포트: $STOREFRONT_PORT).${NC}"
     echo -e "${CYAN}   로그: tail -f $log_file${NC}"
+}
+
+# 함수: 서비스 프로세스 정리 (포트 충돌 방지)
+cleanup_service_processes() {
+    local service_name="$1"
+    local port="$2"
+    
+    echo -e "${CYAN}🧹 $service_name 관련 기존 프로세스 정리 중...${NC}"
+    
+    # 해당 포트를 사용하는 프로세스 찾기
+    local pids=$(lsof -ti:$port 2>/dev/null || netstat -tulpn | grep ":$port " | awk '{print $7}' | cut -d'/' -f1 | grep -v '-' || true)
+    
+    if [[ -n "$pids" ]]; then
+        echo -e "${YELLOW}   포트 $port를 사용하는 프로세스 발견: $pids${NC}"
+        for pid in $pids; do
+            if [[ "$pid" =~ ^[0-9]+$ ]]; then
+                echo -e "${YELLOW}   프로세스 $pid 종료 중...${NC}"
+                kill -TERM "$pid" 2>/dev/null || true
+                sleep 1
+                if ps -p "$pid" > /dev/null 2>&1; then
+                    echo -e "${YELLOW}   강제 종료: $pid${NC}"
+                    kill -9 "$pid" 2>/dev/null || true
+                fi
+            fi
+        done
+    fi
+    
+    # 관련된 yarn/node 프로세스 정리 (service별)
+    if [[ "$service_name" == "backend" ]]; then
+        pkill -f "yarn.*dev.*kbeauty-app[^-]" 2>/dev/null || true
+        pkill -f "medusa.*develop" 2>/dev/null || true
+    elif [[ "$service_name" == "storefront" ]]; then
+        pkill -f "yarn.*dev.*kbeauty-app-storefront" 2>/dev/null || true
+        pkill -f "next.*dev.*8000" 2>/dev/null || true
+        pkill -f "next.*dev.*10004" 2>/dev/null || true  # 이전 설정 정리
+    fi
+    
+    # 기존 PID 파일 정리
+    local pid_file="$PID_DIR/${service_name}.pid"
+    if [[ -f "$pid_file" ]]; then
+        local old_pid=$(cat "$pid_file" 2>/dev/null || echo "")
+        if [[ -n "$old_pid" ]] && ! ps -p "$old_pid" > /dev/null 2>&1; then
+            rm -f "$pid_file"
+            echo -e "${CYAN}   오래된 PID 파일 정리됨${NC}"
+        fi
+    fi
+    
+    sleep 1
 }
 
 # 함수: 프로세스 중지
@@ -354,27 +409,88 @@ show_logs() {
 
 # 함수: 개발 환경 리셋
 reset_environment() {
-    echo -e "${YELLOW}🔄 개발 환경 리셋 중...${NC}"
+    echo -e "${PURPLE}🔄 개발 환경 리셋 중...${NC}"
     
     # 모든 서비스 중지
-    stop_process "backend"
+    echo -e "${YELLOW}1. 모든 서비스 중지 중...${NC}"
     stop_process "storefront"
+    stop_process "backend"
+    
+    # 포트 정리
+    echo -e "${YELLOW}2. 포트 충돌 정리 중...${NC}"
+    cleanup_all_ports
+    
+    # Docker 서비스 재시작
+    echo -e "${YELLOW}3. Docker 서비스 재시작 중...${NC}"
     stop_docker
+    sleep 2
+    start_docker
     
     # PID 및 로그 파일 정리
-    echo -e "${YELLOW}🧹 임시 파일 정리 중...${NC}"
-    rm -rf "$PID_DIR"/*
-    rm -rf "$LOG_DIR"/*
+    echo -e "${YELLOW}4. 임시 파일 정리 중...${NC}"
+    rm -f "$PID_DIR"/*.pid
+    > "$LOG_DIR/backend.log" 2>/dev/null || true
+    > "$LOG_DIR/storefront.log" 2>/dev/null || true
     
-    # Docker 볼륨 및 네트워크 정리 (선택적)
-    read -p "Docker 볼륨도 삭제하시겠습니까? (데이터베이스 데이터가 삭제됩니다) [y/N]: " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo -e "${YELLOW}🗑️  Docker 볼륨 삭제 중...${NC}"
-        sudo docker-compose down -v
+    echo -e "${GREEN}✅ 환경 리셋이 완료되었습니다.${NC}"
+    echo -e "${CYAN}💡 이제 './scripts/kbeauty-manager.sh start-all'로 서비스를 시작할 수 있습니다.${NC}"
+}
+
+# 함수: 모든 포트 정리 (CI/CD용)
+cleanup_all_ports() {
+    echo -e "${CYAN}🧹 모든 kbeauty 관련 프로세스 정리 중...${NC}"
+    
+    # kbeauty 관련 모든 프로세스 정리
+    pkill -f "yarn.*dev.*kbeauty" 2>/dev/null || true
+    pkill -f "next.*dev.*8000" 2>/dev/null || true
+    pkill -f "next.*dev.*10004" 2>/dev/null || true
+    pkill -f "medusa.*develop" 2>/dev/null || true
+    
+    # 포트별 정리
+    local ports=($BACKEND_PORT $STOREFRONT_PORT)
+    for port in "${ports[@]}"; do
+        local pids=$(lsof -ti:$port 2>/dev/null || true)
+        if [[ -n "$pids" ]]; then
+            echo -e "${YELLOW}   포트 $port 정리 중: $pids${NC}"
+            for pid in $pids; do
+                if [[ "$pid" =~ ^[0-9]+$ ]]; then
+                    kill -TERM "$pid" 2>/dev/null || true
+                    sleep 1
+                    if ps -p "$pid" > /dev/null 2>&1; then
+                        kill -9 "$pid" 2>/dev/null || true
+                    fi
+                fi
+            done
+        fi
+    done
+    
+    # PID 파일 정리
+    rm -f "$PID_DIR"/*.pid
+    
+    echo -e "${GREEN}   포트 정리 완료${NC}"
+    sleep 2
+}
+
+# 함수: CI/CD 배포 전 정리
+cleanup_for_deployment() {
+    echo -e "${PURPLE}🚀 배포 전 환경 정리 중...${NC}"
+    
+    # 기존 프로세스 모두 정리
+    cleanup_all_ports
+    
+    # 로그 백업
+    if [[ -f "$LOG_DIR/backend.log" ]]; then
+        cp "$LOG_DIR/backend.log" "$LOG_DIR/backend-$(date +%Y%m%d-%H%M%S).log.bak"
+    fi
+    if [[ -f "$LOG_DIR/storefront.log" ]]; then
+        cp "$LOG_DIR/storefront.log" "$LOG_DIR/storefront-$(date +%Y%m%d-%H%M%S).log.bak"
     fi
     
-    echo -e "${GREEN}✅ 개발 환경 리셋이 완료되었습니다.${NC}"
+    # 로그 파일 초기화
+    > "$LOG_DIR/backend.log" 2>/dev/null || true
+    > "$LOG_DIR/storefront.log" 2>/dev/null || true
+    
+    echo -e "${GREEN}✅ 배포 전 정리 완료${NC}"
 }
 
 # 함수: 수동 배포 실행
@@ -673,6 +789,14 @@ main() {
         "reset")
             print_header
             reset_environment
+            ;;
+        "cleanup")
+            print_header
+            cleanup_all_ports
+            ;;
+        "cleanup-deploy")
+            print_header
+            cleanup_for_deployment
             ;;
         "deploy")
             print_header

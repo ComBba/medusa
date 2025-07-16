@@ -82,6 +82,10 @@ jobs:
         run: |
           ssh -p ${{ env.DEPLOY_PORT }} barahime@${{ env.DEPLOY_HOST }} "
             cd ${{ env.DEPLOY_PATH }} &&
+            
+            echo '🧹 배포 전 환경 정리 중...' &&
+            ./scripts/kbeauty-manager.sh cleanup-deploy &&
+            
             echo '🔄 Git 업데이트 중...' &&
             git fetch origin &&
             git reset --hard origin/kbeauty/main &&

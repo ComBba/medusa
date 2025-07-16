@@ -5,15 +5,5 @@ redisUrl not found. A fake redis instance will be used.
 [32minfo[39m:    Locking module: Using "in-memory" as default.
 [32minfo[39m:    No job to load from /home/barahime/github/medusa/kbeauty-app/node_modules/@medusajs/medusa/dist/jobs. skipped.
 - Creating server
-Error: listen EADDRINUSE: address already in use :::10000
-    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
-    at listenInCluster (node:net:1961:12)
-    at Server.listen (node:net:2063:7)
-    at internalStart (/home/barahime/github/medusa/kbeauty-app/node_modules/@medusajs/medusa/src/commands/start.ts:208:15)
-    at async start (/home/barahime/github/medusa/kbeauty-app/node_modules/@medusajs/medusa/src/commands/start.ts:290:5) {
-  code: 'EADDRINUSE',
-  errno: -98,
-  syscall: 'listen',
-  address: '::',
-  port: 10000
-}
+✔ Server is ready on port: 9000 – 8ms
+[32minfo[39m:    Admin URL → http://localhost:9000/app

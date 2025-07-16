@@ -1,11 +1,11 @@
  ⨯ Failed to start server
-Error: listen EADDRINUSE: address already in use :::10004
-    at <unknown> (Error: listen EADDRINUSE: address already in use :::10004)
+Error: listen EADDRINUSE: address already in use :::8000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::8000)
     at new Promise (<anonymous>) {
   code: 'EADDRINUSE',
   errno: -98,
   syscall: 'listen',
   address: '::',
-  port: 10004
+  port: 8000
 }
 [?25h
