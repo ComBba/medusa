@@ -62,6 +62,12 @@ show_usage() {
     echo -e "  ${GREEN}reset${NC}     - 개발 환경 리셋"
     echo -e "  ${GREEN}ports${NC}     - 포트 사용 현황 확인"
     echo ""
+    echo -e "${WHITE}CI/CD 명령어:${NC}"
+    echo -e "  ${PURPLE}deploy${NC}    - 수동 배포 실행"
+    echo -e "  ${PURPLE}cicd${NC}      - CI/CD 시스템 상태 확인"
+    echo -e "  ${PURPLE}deploy-logs${NC} - 배포 로그 확인"
+    echo -e "  ${PURPLE}git-status${NC}  - Git 상태 및 브랜치 확인"
+    echo ""
     echo -e "${WHITE}서비스:${NC}"
     echo -e "  ${BLUE}all${NC}         - 모든 서비스"
     echo -e "  ${BLUE}docker${NC}      - Docker 서비스 (DB, Redis, MinIO 등)"
@@ -77,6 +83,8 @@ show_usage() {
     echo -e "  ${CYAN}./scripts/kbeauty-manager.sh restart backend${NC}  # 백엔드만 재시작"
     echo -e "  ${CYAN}./scripts/kbeauty-manager.sh logs storefront${NC}  # 스토어프론트 로그 확인"
     echo -e "  ${CYAN}./scripts/kbeauty-manager.sh status${NC}           # 전체 상태 확인"
+    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh cicd${NC}             # CI/CD 시스템 상태"
+    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh deploy${NC}           # 수동 배포 실행"
     echo ""
 }
 
@@ -334,6 +342,161 @@ reset_environment() {
     echo -e "${GREEN}✅ 개발 환경 리셋이 완료되었습니다.${NC}"
 }
 
+# 함수: 수동 배포 실행
+run_manual_deploy() {
+    echo -e "${PURPLE}🚀 수동 배포를 실행합니다...${NC}"
+    
+    # 배포 스크립트 존재 확인
+    if [[ ! -f "$PROJECT_ROOT/scripts/deploy.sh" ]]; then
+        echo -e "${RED}❌ 배포 스크립트를 찾을 수 없습니다: $PROJECT_ROOT/scripts/deploy.sh${NC}"
+        return 1
+    fi
+    
+    # 현재 브랜치 확인
+    local current_branch=$(git -C "$PROJECT_ROOT" branch --show-current)
+    echo -e "${CYAN}📍 현재 브랜치: $current_branch${NC}"
+    
+    if [[ "$current_branch" != "kbeauty/main" ]]; then
+        echo -e "${YELLOW}⚠️  권장: kbeauty/main 브랜치에서 배포하세요${NC}"
+        echo -e "${YELLOW}   현재 브랜치에서 계속하시겠습니까? (y/N)${NC}"
+        read -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo -e "${CYAN}💡 브랜치 변경: git checkout kbeauty/main${NC}"
+            return 0
+        fi
+    fi
+    
+    # 배포 실행
+    echo -e "${PURPLE}🚀 배포 스크립트 실행 중...${NC}"
+    "$PROJECT_ROOT/scripts/deploy.sh" production
+}
+
+# 함수: CI/CD 시스템 상태 확인
+check_cicd_status() {
+    echo -e "${PURPLE}🔍 CI/CD 시스템 상태를 확인합니다...${NC}"
+    echo ""
+    
+    # GitHub Actions 상태
+    echo -e "${WHITE}📊 GitHub Actions 정보:${NC}"
+    echo -e "  Repository: ${CYAN}ComBba/medusa${NC}"
+    echo -e "  Workflow: ${CYAN}🌸 Deploy KBeauty.Market${NC}"
+    echo -e "  URL: ${CYAN}https://github.com/ComBba/medusa/actions${NC}"
+    echo ""
+    
+    # Git 브랜치 정보
+    echo -e "${WHITE}🌿 Git 브랜치 정보:${NC}"
+    local current_branch=$(git -C "$PROJECT_ROOT" branch --show-current)
+    local last_commit=$(git -C "$PROJECT_ROOT" log --oneline -1)
+    echo -e "  현재 브랜치: ${GREEN}$current_branch${NC}"
+    echo -e "  최신 커밋: ${CYAN}$last_commit${NC}"
+    echo ""
+    
+    # 배포 스크립트 상태
+    echo -e "${WHITE}📋 배포 시스템 상태:${NC}"
+    if [[ -f "$PROJECT_ROOT/scripts/deploy.sh" ]]; then
+        echo -e "  배포 스크립트: ${GREEN}✅ 사용 가능${NC}"
+    else
+        echo -e "  배포 스크립트: ${RED}❌ 없음${NC}"
+    fi
+    
+    if [[ -f "$PROJECT_ROOT/.github/workflows/deploy-kbeauty.yml" ]]; then
+        echo -e "  GitHub Actions: ${GREEN}✅ 설정됨${NC}"
+    else
+        echo -e "  GitHub Actions: ${RED}❌ 설정 안됨${NC}"
+    fi
+    
+    # SSH 키 확인
+    if [[ -f "$HOME/.ssh/kbeauty_deploy" ]]; then
+        echo -e "  SSH 키: ${GREEN}✅ 설정됨${NC}"
+    else
+        echo -e "  SSH 키: ${YELLOW}⚠️  확인 필요${NC}"
+    fi
+    echo ""
+    
+    # 서비스 상태
+    echo -e "${WHITE}🌐 서비스 상태:${NC}"
+    curl -s -k -o /dev/null -w "  메인 사이트: %{http_code} (https://kbeauty.market)\n" "https://kbeauty.market" || echo -e "  메인 사이트: ${RED}❌ 연결 실패${NC}"
+    curl -s -k -o /dev/null -w "  API 서버: %{http_code} (https://api.kbeauty.market)\n" "https://api.kbeauty.market/health" || echo -e "  API 서버: ${RED}❌ 연결 실패${NC}"
+    echo ""
+}
+
+# 함수: 배포 로그 확인
+show_deploy_logs() {
+    echo -e "${PURPLE}📋 배포 로그를 확인합니다...${NC}"
+    
+    local log_dir="$PROJECT_ROOT/.logs"
+    
+    if [[ ! -d "$log_dir" ]]; then
+        echo -e "${RED}❌ 로그 디렉토리를 찾을 수 없습니다: $log_dir${NC}"
+        return 1
+    fi
+    
+    # 최신 배포 로그 찾기
+    local latest_deploy_log=$(ls -t "$log_dir"/deploy-*.log 2>/dev/null | head -1)
+    
+    if [[ -n "$latest_deploy_log" ]]; then
+        echo -e "${GREEN}📄 최신 배포 로그: $(basename "$latest_deploy_log")${NC}"
+        echo -e "${CYAN}위치: $latest_deploy_log${NC}"
+        echo ""
+        echo -e "${WHITE}마지막 20줄:${NC}"
+        tail -20 "$latest_deploy_log"
+    else
+        echo -e "${YELLOW}⚠️  배포 로그를 찾을 수 없습니다.${NC}"
+        echo ""
+        echo -e "${WHITE}사용 가능한 로그 파일들:${NC}"
+        ls -la "$log_dir"/*.log 2>/dev/null || echo -e "${CYAN}  로그 파일이 없습니다.${NC}"
+    fi
+    echo ""
+}
+
+# 함수: Git 상태 확인
+check_git_status() {
+    echo -e "${PURPLE}🌿 Git 상태를 확인합니다...${NC}"
+    echo ""
+    
+    cd "$PROJECT_ROOT"
+    
+    # 브랜치 정보
+    echo -e "${WHITE}📍 브랜치 정보:${NC}"
+    local current_branch=$(git branch --show-current)
+    echo -e "  현재 브랜치: ${GREEN}$current_branch${NC}"
+    
+    # 원격 상태 확인
+    echo -e "${WHITE}🔄 원격 저장소 상태:${NC}"
+    git fetch --dry-run origin 2>/dev/null
+    
+    local behind_commits=$(git rev-list --count HEAD..origin/$current_branch 2>/dev/null || echo "0")
+    local ahead_commits=$(git rev-list --count origin/$current_branch..HEAD 2>/dev/null || echo "0")
+    
+    if [[ "$behind_commits" -gt 0 ]]; then
+        echo -e "  ${YELLOW}⚠️  원격보다 $behind_commits 커밋 뒤쳐져 있음${NC}"
+        echo -e "  ${CYAN}💡 git pull origin $current_branch${NC}"
+    else
+        echo -e "  ${GREEN}✅ 최신 상태${NC}"
+    fi
+    
+    if [[ "$ahead_commits" -gt 0 ]]; then
+        echo -e "  ${CYAN}📤 원격보다 $ahead_commits 커밋 앞서 있음${NC}"
+        echo -e "  ${CYAN}💡 git push origin $current_branch${NC}"
+    fi
+    
+    # 작업 디렉토리 상태
+    echo -e "${WHITE}📝 작업 디렉토리 상태:${NC}"
+    if git diff --quiet && git diff --cached --quiet; then
+        echo -e "  ${GREEN}✅ 깨끗함 (변경사항 없음)${NC}"
+    else
+        echo -e "  ${YELLOW}⚠️  변경사항이 있습니다:${NC}"
+        git status --porcelain | head -10
+    fi
+    
+    # 최근 커밋들
+    echo ""
+    echo -e "${WHITE}📅 최근 커밋 (5개):${NC}"
+    git log --oneline -5 --color=always
+    echo ""
+}
+
 # 메인 함수
 main() {
     local command="$1"
@@ -422,6 +585,22 @@ main() {
         "reset")
             print_header
             reset_environment
+            ;;
+        "deploy")
+            print_header
+            run_manual_deploy
+            ;;
+        "cicd")
+            print_header
+            check_cicd_status
+            ;;
+        "deploy-logs")
+            print_header
+            show_deploy_logs
+            ;;
+        "git-status")
+            print_header
+            check_git_status
             ;;
         *)
             show_usage

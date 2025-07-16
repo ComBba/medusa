@@ -129,10 +129,10 @@ yarn kbeauty:status         # 서비스 상태 확인
 
 #### 🛠️ 서비스 관리 스크립트
 ```bash
-# 메인 관리 스크립트
+# 메인 관리 스크립트 (CI/CD 기능 포함!)
 ./scripts/kbeauty-manager.sh [command] [service]
 
-# 개별 서비스 시작/중지
+# 서비스 관리
 yarn kbeauty:start-backend   # 백엔드만 시작
 yarn kbeauty:start-frontend  # 스토어프론트만 시작 
 yarn kbeauty:start-docker    # Docker 서비스만 시작
@@ -141,6 +141,12 @@ yarn kbeauty:start-docker    # Docker 서비스만 시작
 yarn kbeauty:health         # 헬스 체크
 yarn kbeauty:ports          # 포트 사용 현황
 yarn kbeauty:logs [service] # 로그 확인
+
+# 🚀 CI/CD 관리 (NEW!)
+./scripts/kbeauty-manager.sh cicd          # CI/CD 시스템 상태 확인
+./scripts/kbeauty-manager.sh deploy        # 수동 배포 실행
+./scripts/kbeauty-manager.sh deploy-logs   # 배포 로그 확인
+./scripts/kbeauty-manager.sh git-status    # Git 상태 확인
 ```
 
 #### 🗄️ 데이터베이스 관리

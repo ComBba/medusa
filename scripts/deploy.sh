@@ -134,26 +134,26 @@ fi
 
 # 배포 완료
 echo -e "${PINK}"
-cat << 'EOF'
+cat << EOF
 ╔════════════════════════════════════════════════════════════════════════╗
-║                        🎉 배포 완료!                                   ║
+║                    🎉 CI/CD 자동 배포 완료!                            ║
 ║                                                                        ║
 ║  🌐 메인 사이트: https://kbeauty.market                                ║
 ║  🔧 API 서버: https://api.kbeauty.market                               ║
 ║  💾 데이터베이스: https://db.kbeauty.market                             ║
 ║  📁 파일 저장소: https://storage.kbeauty.market                         ║
 ║                                                                        ║
-║  📊 배포 로그: LOG_FILE_PLACEHOLDER                                     ║
-║  📦 백업 위치: BACKUP_DIR_PLACEHOLDER                                   ║
+║  🚀 GitHub Actions: 자동 배포 시스템 운영 중                            ║
+║  📊 배포 로그: $LOG_FILE                                               ║
+║  📦 백업 위치: $BACKUP_DIR                                             ║
+║                                                                        ║
+║  🌸 kbeauty/main 브랜치 → 자동 배포 활성화됨!                          ║
 ╚════════════════════════════════════════════════════════════════════════╝
 EOF
 echo -e "${NC}"
 
-# 로그 경로와 백업 경로를 실제 값으로 치환
-sed -i "s|LOG_FILE_PLACEHOLDER|$LOG_FILE|g" /dev/stdout 2>/dev/null || true
-sed -i "s|BACKUP_DIR_PLACEHOLDER|$BACKUP_DIR|g" /dev/stdout 2>/dev/null || true
-
-log "🎊 KBeauty.Market 배포가 성공적으로 완료되었습니다!"
+log "🎊 KBeauty.Market CI/CD 자동 배포가 성공적으로 완료되었습니다!"
+log "🚀 GitHub Actions로 push-to-deploy 시스템 운영 중!"
 log "🎯 Q4 2025 목표: 50개 K-Beauty 브랜드 연동을 향해!"
 
 exit 0 

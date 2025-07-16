@@ -100,6 +100,13 @@ khelp() {
     echo -e "${GREEN}URL 확인:${NC}"
     echo "  kurl-admin/api/store/db/storage - 서비스 URL 출력"
     echo ""
+    echo -e "${PURPLE}🚀 CI/CD 관리:${NC}"
+    echo "  kcicd        - CI/CD 시스템 상태 확인"
+    echo "  kdeploy      - 수동 배포 실행"
+    echo "  kdeploy-logs - 배포 로그 확인"
+    echo "  kgit-status  - Git 상태 확인"
+    echo "  kactions     - GitHub Actions 페이지 열기"
+    echo ""
 }
 
 # 빠른 개발 환경 설정 함수
@@ -151,5 +158,23 @@ kgit() {
     esac
 }
 
+# 🚀 CI/CD 관련 별칭
+alias kcicd='$KBEAUTY_ROOT/scripts/kbeauty-manager.sh cicd'              # CI/CD 상태 확인
+alias kdeploy='$KBEAUTY_ROOT/scripts/kbeauty-manager.sh deploy'          # 수동 배포 실행
+alias kdeploy-logs='$KBEAUTY_ROOT/scripts/kbeauty-manager.sh deploy-logs' # 배포 로그 확인
+alias kgit-status='$KBEAUTY_ROOT/scripts/kbeauty-manager.sh git-status'  # Git 상태 확인
+
+# GitHub Actions 관련
+kactions() {
+    echo -e "${CYAN}🚀 GitHub Actions 페이지를 여는 중...${NC}"
+    echo -e "🔗 https://github.com/ComBba/medusa/actions"
+    if command -v xdg-open &> /dev/null; then
+        xdg-open "https://github.com/ComBba/medusa/actions"
+    elif command -v open &> /dev/null; then
+        open "https://github.com/ComBba/medusa/actions"
+    fi
+}
+
 echo -e "${GREEN}✅ kbeauty.market 별칭이 로드되었습니다!${NC}"
-echo -e "💡 ${CYAN}khelp${NC} 명령어로 사용 가능한 별칭을 확인하세요." 
+echo -e "💡 ${CYAN}khelp${NC} 명령어로 사용 가능한 별칭을 확인하세요."
+echo -e "🚀 ${PURPLE}CI/CD 별칭${NC}: kcicd, kdeploy, kdeploy-logs, kgit-status, kactions" 
