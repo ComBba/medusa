@@ -29,9 +29,9 @@ mkdir -p "$PID_DIR"
 LOG_DIR="$PROJECT_ROOT/.logs"
 mkdir -p "$LOG_DIR"
 
-# 서비스 포트 정의 (현재 실제 사용 포트)
-BACKEND_PORT=9000
-STOREFRONT_PORT=8000
+# 서비스 포트 정의 (kbeauty 프로젝트 표준 포트)
+BACKEND_PORT=10000
+STOREFRONT_PORT=10004
 POSTGRES_PORT=10002
 REDIS_PORT=10003
 ADMINER_PORT=10008
@@ -245,8 +245,8 @@ cleanup_service_processes() {
         pkill -f "medusa.*develop" 2>/dev/null || true
     elif [[ "$service_name" == "storefront" ]]; then
         pkill -f "yarn.*dev.*kbeauty-app-storefront" 2>/dev/null || true
-        pkill -f "next.*dev.*8000" 2>/dev/null || true
-        pkill -f "next.*dev.*10004" 2>/dev/null || true  # 이전 설정 정리
+        pkill -f "next.*dev.*10004" 2>/dev/null || true
+        pkill -f "next.*dev.*8000" 2>/dev/null || true  # 잘못된 설정 정리
     fi
     
     # 기존 PID 파일 정리
@@ -442,8 +442,8 @@ cleanup_all_ports() {
     
     # kbeauty 관련 모든 프로세스 정리
     pkill -f "yarn.*dev.*kbeauty" 2>/dev/null || true
-    pkill -f "next.*dev.*8000" 2>/dev/null || true
     pkill -f "next.*dev.*10004" 2>/dev/null || true
+    pkill -f "next.*dev.*8000" 2>/dev/null || true  # 잘못된 설정 정리
     pkill -f "medusa.*develop" 2>/dev/null || true
     
     # 포트별 정리

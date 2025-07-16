@@ -52,23 +52,23 @@ yarn kbeauty:docker:up
 ./scripts/kbeauty-manager.sh start-all
 
 # 또는 개별 실행
-yarn kbeauty:backend        # 백엔드 서버 (포트 9000)
-yarn kbeauty:storefront     # 스토어프론트 (포트 8000)
+yarn kbeauty:backend        # 백엔드 서버 (포트 10000)
+yarn kbeauty:storefront     # 스토어프론트 (포트 10004)
 yarn kbeauty:admin          # 관리자 패널 (Medusa v2에 내장)
 ```
 
 ## 🌐 서비스 URL
 
 ### 개발 환경
-- **메인 스토어**: http://localhost:8000 (kbeauty-app-storefront)
-- **API 서버**: http://localhost:9000 (kbeauty-app)
-- **관리자 패널**: http://localhost:9000/app (Medusa v2 내장)
+- **메인 스토어**: http://localhost:10004 (kbeauty-app-storefront)
+- **API 서버**: http://localhost:10000 (kbeauty-app)
+- **관리자 패널**: http://localhost:10000/app (Medusa v2 내장)
 - **데이터베이스 관리**: http://localhost:10008 (Adminer)
 - **파일 저장소**: http://localhost:10009 (MinIO)
 
 ### 포트 정보
-- **kbeauty-app**: 9000 (Medusa v2 백엔드 + 관리자)
-- **kbeauty-app-storefront**: 8000 (Next.js 스토어프론트)
+- **kbeauty-app**: 10000 (Medusa v2 백엔드 + 관리자)
+- **kbeauty-app-storefront**: 10004 (Next.js 스토어프론트)
 - **PostgreSQL**: 10002
 - **Redis**: 10003
 - **Adminer**: 10008
@@ -191,14 +191,14 @@ khelp           # 도움말 확인
 
 ### 백엔드 개발 (kbeauty-app)
 - **기반**: Medusa.js v2
-- **포트**: 9000
+- **포트**: 10000
 - **설정**: `kbeauty-app/medusa-config.ts`
-- **API 문서**: http://localhost:9000/docs
-- **관리자 패널**: http://localhost:9000/app
+- **API 문서**: http://localhost:10000/docs
+- **관리자 패널**: http://localhost:10000/app
 
 ### 프론트엔드 개발 (kbeauty-app-storefront)
 - **기반**: Next.js 14 + App Router
-- **포트**: 8000
+- **포트**: 10004
 - **설정**: `kbeauty-app-storefront/next.config.js`
 - **스타일링**: Tailwind CSS + @medusajs/ui
 - **상태 관리**: Zustand

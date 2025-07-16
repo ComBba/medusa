@@ -1,11 +1,45 @@
- ⨯ Failed to start server
-Error: listen EADDRINUSE: address already in use :::8000
-    at <unknown> (Error: listen EADDRINUSE: address already in use :::8000)
-    at new Promise (<anonymous>) {
-  code: 'EADDRINUSE',
-  errno: -98,
-  syscall: 'listen',
-  address: '::',
-  port: 8000
-}
-[?25h
+   ▲ Next.js 15.3.1 (Turbopack)
+   - Local:        http://localhost:10004
+   - Network:      http://49.247.9.193:10004
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Compiled middleware in 113ms
+ ✓ Ready in 866ms
+ ⨯ Error [TypeError]: fetch failed
+    at getRegionMap (src/middleware.ts:27:30)
+    at middleware (src/middleware.ts:115:26)
+  25 |   ) {
+  26 |     // Fetch regions from Medusa. We can't use the JS client here because middleware is running on Edge and the client needs a Node environment.
+> 27 |     const { regions } = await fetch(`${BACKEND_URL}/store/regions`, {
+     |                              ^
+  28 |       headers: {
+  29 |         "x-publishable-api-key": PUBLISHABLE_API_KEY!,
+  30 |       },
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 619ms
+ ⨯ Error [TypeError]: fetch failed
+    at getRegionMap (src/middleware.ts:27:30)
+    at middleware (src/middleware.ts:115:26)
+  25 |   ) {
+  26 |     // Fetch regions from Medusa. We can't use the JS client here because middleware is running on Edge and the client needs a Node environment.
+> 27 |     const { regions } = await fetch(`${BACKEND_URL}/store/regions`, {
+     |                              ^
+  28 |       headers: {
+  29 |         "x-publishable-api-key": PUBLISHABLE_API_KEY!,
+  30 |       },
+ GET /dk 404 in 4ms
+ ○ Compiling /_not-found/page ...
+ ⚠ Cross origin request detected from kbeauty.market to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ ✓ Compiled /_not-found/page in 1807ms
+ ⨯ Error [TypeError]: fetch failed
+    at getRegionMap (src/middleware.ts:27:30)
+    at middleware (src/middleware.ts:115:26)
+  25 |   ) {
+  26 |     // Fetch regions from Medusa. We can't use the JS client here because middleware is running on Edge and the client needs a Node environment.
+> 27 |     const { regions } = await fetch(`${BACKEND_URL}/store/regions`, {
+     |                              ^
+  28 |       headers: {
+  29 |         "x-publishable-api-key": PUBLISHABLE_API_KEY!,
+  30 |       },
