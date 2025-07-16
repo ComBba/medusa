@@ -3,8 +3,28 @@ import { Button, Heading } from "@medusajs/ui"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
 const Hero = () => {
+  // 환경변수에서 간단한 버전 정보 가져오기
+  const commitHash = process.env.NEXT_PUBLIC_GIT_COMMIT_HASH || 'unknown'
+  const branch = process.env.NEXT_PUBLIC_GIT_BRANCH || 'unknown'
+  const githubUrl = process.env.NEXT_PUBLIC_GITHUB_URL || 'https://github.com/ComBba/medusa'
+
   return (
     <div className="h-[75vh] w-full border-b border-ui-border-base relative bg-gradient-to-br from-pink-50 to-purple-50">
+      {/* 버전 배지 - 좌상단 */}
+      <div className="absolute top-4 left-4 z-20">
+        <a
+          href={`${githubUrl}/commit/${commitHash}`}
+          target="_blank"
+          rel="noreferrer"
+          className="bg-white/80 backdrop-blur-sm hover:bg-white/90 transition-all duration-300 rounded-full px-3 py-1 text-xs text-gray-600 hover:text-pink-600 border border-gray-200 hover:border-pink-300 flex items-center gap-2 shadow-sm"
+          title={`현재 배포 버전: ${commitHash} (${branch})`}
+        >
+          <Github className="w-3 h-3" />
+          <span className="font-mono">{commitHash}</span>
+          <span className="text-gray-400">({branch})</span>
+        </a>
+      </div>
+
       <div className="absolute inset-0 z-10 flex flex-col justify-center items-center text-center small:p-32 gap-8">
         <div className="flex items-center gap-3 text-pink-500 mb-4">
           <Sparkles className="w-8 h-8" />
@@ -54,6 +74,10 @@ const Hero = () => {
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
             실시간 주문 관리
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 bg-pink-400 rounded-full"></span>
+            CI/CD 자동 배포
           </div>
         </div>
       </div>

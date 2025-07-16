@@ -2,6 +2,7 @@ import { Metadata } from "next"
 
 import FeaturedProducts from "@modules/home/components/featured-products"
 import Hero from "@modules/home/components/hero"
+import SystemInfo from "@modules/home/components/system-info"
 import { listCollections } from "@lib/data/collections"
 import { getRegion } from "@lib/data/regions"
 
@@ -42,6 +43,8 @@ export default async function Home(props: {
           <FeaturedProducts collections={collections} region={region} />
         </ul>
       </div>
+      {/* 시스템 정보 플로팅 버튼 */}
+      <SystemInfo />
     </>
   )
 }
