@@ -12,5 +12,16 @@ module.exports = defineConfig({
       jwtSecret: process.env.JWT_SECRET || "supersecret",
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
     }
+  },
+  admin: {
+    path: "/app",
+    backendUrl: process.env.MEDUSA_BACKEND_URL || "https://api.kbeauty.market",
+    disable: false,
+    vite: (config) => {
+      config.server = config.server || {}
+      config.server.host = true
+      config.server.allowedHosts = ["admin.kbeauty.market", "localhost", "127.0.0.1"]
+      return config
+    }
   }
 })

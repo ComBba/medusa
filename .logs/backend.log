@@ -5,15 +5,13 @@ redisUrl not found. A fake redis instance will be used.
 [32minfo[39m:    Locking module: Using "in-memory" as default.
 [32minfo[39m:    No job to load from /home/barahime/github/medusa/kbeauty-app/node_modules/@medusajs/medusa/dist/jobs. skipped.
 - Creating server
-Error: listen EADDRINUSE: address already in use :::9000
-    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
-    at listenInCluster (node:net:1961:12)
-    at Server.listen (node:net:2063:7)
-    at internalStart (/home/barahime/github/medusa/kbeauty-app/node_modules/@medusajs/medusa/src/commands/start.ts:208:15)
-    at async start (/home/barahime/github/medusa/kbeauty-app/node_modules/@medusajs/medusa/src/commands/start.ts:290:5) {
-  code: 'EADDRINUSE',
-  errno: -98,
-  syscall: 'listen',
-  address: '::',
-  port: 9000
-}
+✔ Server is ready on port: 10000 – 10ms
+[32minfo[39m:    Admin URL → http://0.0.0.0:10000/app
+[32mhttp[39m:    GET /app ← - (200) - 16.843 ms
+[32mhttp[39m:    GET /app ← - (200) - 4.431 ms
+[32mhttp[39m:    GET /app/entry.jsx ← https://admin.kbeauty.market/app (200) - 0.934 ms
+[32mhttp[39m:    GET /app/index.css ← https://admin.kbeauty.market/app/entry.jsx (200) - 0.796 ms
+[32mhttp[39m:    GET /store/customers/me?fields=%2Aorders ← - (401) - 14.110 ms
+[32mhttp[39m:    OPTIONS /admin/users/me ← https://admin.kbeauty.market/ (204) - 0.902 ms
+[32mhttp[39m:    GET /admin/users/me ← https://admin.kbeauty.market/ (401) - 1.027 ms
+[32mhttp[39m:    GET /admin/users/me ← https://admin.kbeauty.market/ (401) - 0.785 ms

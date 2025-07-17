@@ -30,3 +30,11 @@ dist/**
 
 # Cache File
 /packages/**/.cache
+
+.logs/**
+.pids/**
+.envs/**
+.env*
+*.log
+*.bak
+*.pid
