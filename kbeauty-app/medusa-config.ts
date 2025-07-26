@@ -22,5 +22,33 @@ module.exports = defineConfig({
       config.server.allowedHosts = ["admin.kbeauty.market", "localhost", "127.0.0.1"]
       return config
     }
+  },
+  modules: {
+    "amazon_integration": {
+      resolve: "./src/modules/amazon-integration",
+      options: {
+        // Amazon SP-API 설정
+        lwaClientId: process.env.AMAZON_LWA_CLIENT_ID,
+        lwaClientSecret: process.env.AMAZON_LWA_CLIENT_SECRET,
+        refreshToken: process.env.AMAZON_LWA_REFRESH_TOKEN,
+        awsAccessKeyId: process.env.AMAZON_AWS_ACCESS_KEY_ID,
+        awsSecretAccessKey: process.env.AMAZON_AWS_SECRET_ACCESS_KEY,
+        awsRegion: process.env.AMAZON_AWS_REGION || 'us-east-1',
+        spApiRegion: process.env.AMAZON_SP_API_REGION || 'na',
+        sellerId: process.env.AMAZON_SELLER_ID,
+        sandbox: process.env.AMAZON_SP_API_SANDBOX === 'true',
+        
+        // 마켓플레이스 설정
+        marketplaceIds: process.env.AMAZON_MARKETPLACE_IDS?.split(',') || ['ATVPDKIKX0DER'],
+        marketplaceConfig: process.env.AMAZON_MARKETPLACE_CONFIG ? JSON.parse(process.env.AMAZON_MARKETPLACE_CONFIG) : {},
+        
+        // 모듈 설정
+        enabled: process.env.AMAZON_INTEGRATION_ENABLED === 'true',
+        autoSyncEnabled: process.env.AMAZON_AUTO_SYNC_ENABLED === 'true',
+        syncIntervalMinutes: parseInt(process.env.AMAZON_SYNC_INTERVAL_MINUTES || '30'),
+        maxRetryAttempts: parseInt(process.env.AMAZON_MAX_RETRY_ATTEMPTS || '3'),
+        rateLimitPerSecond: parseInt(process.env.AMAZON_RATE_LIMIT_PER_SECOND || '10'),
+      }
+    }
   }
 })
