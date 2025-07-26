@@ -15,7 +15,6 @@ module.exports = defineConfig({
   },
   admin: {
     path: "/app",
-    backendUrl: process.env.MEDUSA_BACKEND_URL || "https://api.kbeauty.market",
     disable: false,
     vite: (config) => {
       config.server = config.server || {}
