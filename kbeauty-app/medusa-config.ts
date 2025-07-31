@@ -13,14 +13,23 @@ module.exports = defineConfig({
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
     }
   },
-  admin: {
+    admin: {
     path: "/app",
     disable: false,
-    vite: (config) => {
-      config.server = config.server || {}
-      config.server.host = true
-      config.server.allowedHosts = ["admin.kbeauty.market", "localhost", "127.0.0.1"]
-      return config
+    vite: () => {
+      return {
+        server: {
+          host: true,
+          allowedHosts: ["localhost", "127.0.0.1", "admin.kbeauty.market"]
+        },
+        optimizeDeps: {
+          include: [
+            "@medusajs/admin-sdk",
+            "@medusajs/ui", 
+            "@medusajs/framework/types"
+          ]
+        }
+      }
     }
   },
   modules: {

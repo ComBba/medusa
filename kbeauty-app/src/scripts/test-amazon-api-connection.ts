@@ -18,22 +18,25 @@ export default async function testAmazonApiConnection({ container }: ExecArgs) {
   try {
     const amazonService = container.resolve(AMAZON_INTEGRATION_MODULE)
     
-    // 마켓플레이스 활성화
-    logger.info('📦 1단계: 마켓플레이스 활성화')
+    // 마켓플레이스 확인
+    logger.info('📦 1단계: 마켓플레이스 상태 확인')
     
     const allMarketplaces = await amazonService.listAmazonMarketplaces()
     const usMarketplace = allMarketplaces.find(m => m.marketplace_id === 'ATVPDKIKX0DER')
     
-    if (usMarketplace && !usMarketplace.is_active) {
-      logger.info('🇺🇸 미국 마켓플레이스(ATVPDKIKX0DER) 활성화...')
-      
-      await amazonService.updateAmazonMarketplace(usMarketplace.id, {
-        is_active: true
-      })
-      
-      logger.info('✅ 미국 마켓플레이스 활성화 완료')
-    } else if (usMarketplace?.is_active) {
-      logger.info('✅ 미국 마켓플레이스 이미 활성화됨')
+    logger.info(`📊 찾은 마켓플레이스: ${usMarketplace ? usMarketplace.name : '없음'}`)
+    logger.info(`📊 마켓플레이스 ID: ${usMarketplace?.id}`)
+    logger.info(`📊 활성화 상태: ${usMarketplace?.is_active}`)
+    
+    if (usMarketplace) {
+      if (usMarketplace.is_active) {
+        logger.info('✅ 미국 마켓플레이스 이미 활성화됨')
+      } else {
+        logger.info('ℹ️ 미국 마켓플레이스가 비활성화 상태입니다.')
+        logger.info('💡 관리자 패널에서 활성화할 수 있습니다: http://localhost:10000/app')
+      }
+    } else {
+      logger.warn('⚠️ 미국 마켓플레이스를 찾을 수 없습니다.')
     }
 
     // 환경 변수 확인

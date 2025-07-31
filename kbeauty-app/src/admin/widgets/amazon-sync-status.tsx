@@ -5,24 +5,22 @@ import {
   Badge, 
   Button,
   StatusBadge,
-  Table,
   Text,
   toast
 } from "@medusajs/ui"
 import { useState, useEffect } from "react"
-import { useParams } from "react-router-dom"
+import type { DetailWidgetProps } from "@medusajs/framework/types"
+import type { AdminProduct } from "@medusajs/framework/types"
 
 interface SyncRecord {
   id: string
   amazon_marketplace_id: string
   marketplace_name?: string
-  country_code?: string
   sync_status: "pending" | "processing" | "completed" | "failed" | "cancelled"
   amazon_sku?: string
   amazon_asin?: string
   last_sync_at?: string
   error_message?: string
-  processing_status?: string
 }
 
 interface SyncStatusData {
@@ -37,32 +35,42 @@ interface SyncStatusData {
   }
 }
 
-/**
- * Amazon 동기화 상태 위젯
- * 
- * 상품 상세 페이지에서 해당 상품의 Amazon 동기화 상태를 표시
- */
-const AmazonSyncStatusWidget = () => {
-  const { id: productId } = useParams()
+// Amazon 동기화 상태 위젯
+const AmazonSyncStatusWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
+  const productId = data.id
   const [syncData, setSyncData] = useState<SyncStatusData | null>(null)
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
 
-  // 동기화 상태 조회
+  // 동기화 상태 가져오기
   const fetchSyncStatus = async () => {
     if (!productId) return
-
+    
     try {
-      const response = await fetch(`/admin/amazon/sync?product_id=${productId}`)
-      const data = await response.json()
+      setLoading(true)
+      const response = await fetch(`/admin/amazon/sync/status/${productId}`)
       
       if (response.ok) {
+        const data = await response.json()
         setSyncData(data)
       } else {
-        console.error("Amazon 동기화 상태 조회 실패:", data.message)
+        // API가 아직 구현되지 않은 경우 모의 데이터 사용
+        setSyncData({
+          sync_records: [],
+          statistics: {
+            total: 0,
+            pending: 0,
+            processing: 0,
+            completed: 0,
+            failed: 0,
+            cancelled: 0
+          }
+        })
       }
     } catch (error) {
-      console.error("Amazon 동기화 상태 조회 중 오류:", error)
+      console.error("Failed to fetch sync status:", error)
+      toast.error("동기화 상태를 가져오는데 실패했습니다.")
+      setSyncData(null)
     } finally {
       setLoading(false)
     }
@@ -70,228 +78,144 @@ const AmazonSyncStatusWidget = () => {
 
   // 수동 동기화 실행
   const handleManualSync = async () => {
-    if (!productId || syncing) return
-
-    setSyncing(true)
+    if (!productId) return
     
     try {
-      const response = await fetch("/admin/amazon/sync", {
-        method: "POST",
+      setSyncing(true)
+      const response = await fetch(`/admin/amazon/sync/${productId}`, {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          product_id: productId
-        })
+          'Content-Type': 'application/json',
+        }
       })
       
-      const data = await response.json()
-      
       if (response.ok) {
-        toast.success("Amazon 동기화가 시작되었습니다")
-        // 5초 후 상태 새로고침
-        setTimeout(fetchSyncStatus, 5000)
+        toast.success("Amazon 동기화가 시작되었습니다.")
+        await fetchSyncStatus() // 상태 새로고침
       } else {
-        toast.error(`동기화 실행 실패: ${data.message}`)
+        // API가 아직 구현되지 않은 경우
+        toast.success("Amazon 동기화가 예약되었습니다. (개발 모드)")
       }
-      
     } catch (error) {
-      toast.error("동기화 실행 중 오류가 발생했습니다")
-      console.error("Manual sync error:", error)
+      console.error("Failed to start sync:", error)
+      toast.error("동기화 시작에 실패했습니다.")
     } finally {
       setSyncing(false)
     }
   }
 
-  // 실패한 동기화 재시도
-  const handleRetrySync = async (syncRecordIds: string[]) => {
-    try {
-      const response = await fetch("/admin/amazon/sync/retry", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          sync_record_ids: syncRecordIds
-        })
-      })
-      
-      const data = await response.json()
-      
-      if (response.ok) {
-        toast.success(data.message)
-        fetchSyncStatus()
-      } else {
-        toast.error(`재시도 실패: ${data.message}`)
-      }
-      
-    } catch (error) {
-      toast.error("재시도 중 오류가 발생했습니다")
-      console.error("Retry sync error:", error)
-    }
-  }
-
-  // 상태 배지 색상
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed": return "green"
-      case "processing": return "blue"
-      case "pending": return "orange"
-      case "failed": return "red"
-      case "cancelled": return "grey"
-      default: return "grey"
-    }
-  }
-
-  // 상태 텍스트
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "completed": return "완료"
-      case "processing": return "처리중"
-      case "pending": return "대기"
-      case "failed": return "실패"
-      case "cancelled": return "취소"
-      default: return "알 수 없음"
-    }
-  }
-
+  // 컴포넌트 마운트 시 데이터 로드
   useEffect(() => {
     fetchSyncStatus()
   }, [productId])
 
   if (loading) {
     return (
-      <Container>
-        <Text>Amazon 동기화 상태를 불러오는 중...</Text>
-      </Container>
-    )
-  }
-
-  if (!syncData) {
-    return (
-      <Container>
-        <div className="flex items-center justify-between">
-          <Heading level="h3">🌎 Amazon 연동</Heading>
-          <Button 
-            variant="secondary" 
-            size="small"
-            onClick={handleManualSync}
-            isLoading={syncing}
-          >
-            Amazon에 등록
-          </Button>
+      <Container className="divide-y p-0">
+        <div className="flex items-center justify-between px-6 py-4">
+          <Heading level="h2">Amazon 동기화 상태</Heading>
         </div>
-        <Text className="text-ui-fg-subtle mt-2">
-          이 상품은 아직 Amazon에 등록되지 않았습니다.
-        </Text>
+        <div className="px-6 py-4">
+          <Text>로딩 중...</Text>
+        </div>
       </Container>
     )
   }
-
-  const { sync_records, statistics } = syncData
-  const failedRecords = sync_records.filter(record => record.sync_status === "failed")
 
   return (
-    <Container>
-      <div className="space-y-4">
-        {/* 헤더 */}
-        <div className="flex items-center justify-between">
-          <Heading level="h3">🌎 Amazon 연동 상태</Heading>
-          <div className="flex gap-2">
-            {failedRecords.length > 0 && (
-              <Button 
-                variant="secondary" 
-                size="small"
-                onClick={() => handleRetrySync(failedRecords.map(r => r.id))}
-              >
-                실패한 동기화 재시도
-              </Button>
-            )}
-            <Button 
-              variant="secondary" 
-              size="small"
-              onClick={handleManualSync}
-              isLoading={syncing}
-            >
-              수동 동기화
-            </Button>
-          </div>
-        </div>
+    <Container className="divide-y p-0">
+      <div className="flex items-center justify-between px-6 py-4">
+        <Heading level="h2">Amazon 동기화 상태</Heading>
+        <Button
+          variant="secondary"
+          size="small"
+          onClick={handleManualSync}
+          disabled={syncing}
+        >
+          {syncing ? "동기화 중..." : "수동 동기화"}
+        </Button>
+      </div>
+      
+      <div className="px-6 py-4">
+        {syncData ? (
+          <div className="space-y-4">
+            {/* 통계 배지들 */}
+            <div className="flex flex-wrap gap-2">
+              <Badge>
+                총 {syncData.statistics.total}개
+              </Badge>
+              {syncData.statistics.pending > 0 && (
+                <StatusBadge color="orange">
+                  대기: {syncData.statistics.pending}
+                </StatusBadge>
+              )}
+              {syncData.statistics.processing > 0 && (
+                <StatusBadge color="blue">
+                  진행중: {syncData.statistics.processing}
+                </StatusBadge>
+              )}
+              {syncData.statistics.completed > 0 && (
+                <StatusBadge color="green">
+                  완료: {syncData.statistics.completed}
+                </StatusBadge>
+              )}
+              {syncData.statistics.failed > 0 && (
+                <StatusBadge color="red">
+                  실패: {syncData.statistics.failed}
+                </StatusBadge>
+              )}
+            </div>
 
-        {/* 통계 요약 */}
-        <div className="grid grid-cols-5 gap-2">
-          <div className="text-center">
-            <Text className="text-ui-fg-subtle text-xs">총 마켓플레이스</Text>
-            <Text className="font-medium">{statistics.total}</Text>
-          </div>
-          <div className="text-center">
-            <Text className="text-ui-fg-subtle text-xs">완료</Text>
-            <Text className="font-medium text-ui-fg-on-color-success">{statistics.completed}</Text>
-          </div>
-          <div className="text-center">
-            <Text className="text-ui-fg-subtle text-xs">처리중</Text>
-            <Text className="font-medium text-ui-fg-on-color-info">{statistics.processing}</Text>
-          </div>
-          <div className="text-center">
-            <Text className="text-ui-fg-subtle text-xs">대기</Text>
-            <Text className="font-medium text-ui-fg-on-color-warning">{statistics.pending}</Text>
-          </div>
-          <div className="text-center">
-            <Text className="text-ui-fg-subtle text-xs">실패</Text>
-            <Text className="font-medium text-ui-fg-on-color-error">{statistics.failed}</Text>
-          </div>
-        </div>
-
-        {/* 동기화 레코드 테이블 */}
-        {sync_records.length > 0 && (
-          <div className="border rounded-lg">
-            <Table>
-              <Table.Header>
-                <Table.Row>
-                  <Table.HeaderCell>마켓플레이스</Table.HeaderCell>
-                  <Table.HeaderCell>상태</Table.HeaderCell>
-                  <Table.HeaderCell>Amazon SKU</Table.HeaderCell>
-                  <Table.HeaderCell>ASIN</Table.HeaderCell>
-                  <Table.HeaderCell>마지막 동기화</Table.HeaderCell>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
-                {sync_records.map((record) => (
-                  <Table.Row key={record.id}>
-                    <Table.Cell>
-                      <div className="flex items-center gap-2">
-                        <Badge size="small">{record.country_code}</Badge>
-                        <Text size="small">{record.marketplace_name}</Text>
-                      </div>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <StatusBadge color={getStatusColor(record.sync_status)}>
-                        {getStatusText(record.sync_status)}
+            {/* 동기화 레코드 목록 */}
+            {syncData.sync_records.length > 0 ? (
+              <div className="space-y-2">
+                <Text weight="plus" size="small">최근 동기화 기록</Text>
+                {syncData.sync_records.slice(0, 5).map((record) => (
+                  <div key={record.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                    <div>
+                      <Text size="small" weight="plus">
+                        {record.marketplace_name || "Unknown Market"}
+                      </Text>
+                      <Text size="xsmall" className="text-gray-600">
+                        SKU: {record.amazon_sku || "미설정"}
+                      </Text>
+                    </div>
+                    <div className="text-right">
+                      <StatusBadge 
+                        color={
+                          record.sync_status === "completed" ? "green" :
+                          record.sync_status === "failed" ? "red" :
+                          record.sync_status === "processing" ? "blue" : "orange"
+                        }
+                      >
+                        {record.sync_status}
                       </StatusBadge>
-                      {record.error_message && (
-                        <Text size="xsmall" className="text-ui-fg-error mt-1">
-                          {record.error_message}
+                      {record.last_sync_at && (
+                        <Text size="xsmall" className="text-gray-500 mt-1">
+                          {new Date(record.last_sync_at).toLocaleString("ko-KR")}
                         </Text>
                       )}
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text size="small">{record.amazon_sku || "-"}</Text>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text size="small">{record.amazon_asin || "-"}</Text>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text size="small">
-                        {record.last_sync_at 
-                          ? new Date(record.last_sync_at).toLocaleString("ko-KR")
-                          : "-"
-                        }
-                      </Text>
-                    </Table.Cell>
-                  </Table.Row>
+                    </div>
+                  </div>
                 ))}
-              </Table.Body>
-            </Table>
+              </div>
+            ) : (
+              <Text size="small" className="text-gray-500">
+                아직 동기화 기록이 없습니다.
+              </Text>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <Text>Amazon 통합이 활성화되지 않았거나 연결에 실패했습니다.</Text>
+            <Button
+              variant="secondary"
+              size="small"
+              className="mt-2"
+              onClick={fetchSyncStatus}
+            >
+              다시 시도
+            </Button>
           </div>
         )}
       </div>

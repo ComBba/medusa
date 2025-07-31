@@ -60,9 +60,6 @@ show_usage() {
     echo -e "  ${GREEN}status${NC}    - 서비스 상태 확인"
     echo -e "  ${GREEN}logs${NC}      - 서비스 로그 확인"
     echo -e "  ${GREEN}health${NC}    - 서비스 헬스 체크"
-    echo -e "  ${GREEN}admin${NC}     - 관리자 패널 상태 확인"
-    echo -e "  ${GREEN}restart-admin${NC} - Admin만 재시작 (Docker 유지)"
-    echo -e "  ${GREEN}admin-fix${NC} - Admin 로딩 문제 트러블슈팅"
     echo -e "  ${GREEN}reset${NC}     - 개발 환경 리셋"
     echo -e "  ${GREEN}cleanup${NC}   - 포트 충돌 정리"
     echo -e "  ${GREEN}ports${NC}     - 포트 사용 현황 확인"
@@ -89,8 +86,6 @@ show_usage() {
     echo -e "  ${CYAN}./scripts/kbeauty-manager.sh restart backend${NC}    # 백엔드만 재시작"
     echo -e "  ${CYAN}./scripts/kbeauty-manager.sh logs storefront${NC}    # 스토어프론트 로그 확인"
     echo -e "  ${CYAN}./scripts/kbeauty-manager.sh status${NC}             # 전체 상태 확인"
-    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh restart-admin${NC}      # Admin만 재시작"
-    echo -e "  ${CYAN}./scripts/kbeauty-manager.sh admin-fix${NC}          # Admin 로딩 문제 해결"
     echo -e "  ${CYAN}./scripts/kbeauty-manager.sh cicd${NC}               # CI/CD 시스템 상태"
     echo -e "  ${CYAN}./scripts/kbeauty-manager.sh deploy${NC}             # 수동 배포 실행"
     echo ""
@@ -210,7 +205,7 @@ start_storefront() {
     fi
     
     cd "$STOREFRONT_DIR"
-    # Next.js dev 서버 시작 (포트: $STOREFRONT_PORT)
+    # Next.js dev 서버는 package.json에서 포트 설정됨 (-p 8000)
     nohup yarn dev > "$log_file" 2>&1 &
     local pid=$!
     echo $pid > "$pid_file"
@@ -234,25 +229,24 @@ cleanup_service_processes() {
         for pid in $pids; do
             if [[ "$pid" =~ ^[0-9]+$ ]]; then
                 echo -e "${YELLOW}   프로세스 $pid 종료 중...${NC}"
-                sudo kill -TERM "$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
+                kill -TERM "$pid" 2>/dev/null || true
                 sleep 1
                 if ps -p "$pid" > /dev/null 2>&1; then
                     echo -e "${YELLOW}   강제 종료: $pid${NC}"
-                    sudo kill -9 "$pid" 2>/dev/null || kill -9 "$pid" 2>/dev/null || true
+                    kill -9 "$pid" 2>/dev/null || true
                 fi
             fi
         done
     fi
     
-    # 관련된 yarn/node 프로세스 정리 (service별) - sudo 권한으로도 시도
+    # 관련된 yarn/node 프로세스 정리 (service별)
     if [[ "$service_name" == "backend" ]]; then
-        sudo pkill -f "yarn.*dev.*kbeauty-app[^-]" 2>/dev/null || pkill -f "yarn.*dev.*kbeauty-app[^-]" 2>/dev/null || true
-        sudo pkill -f "medusa.*develop" 2>/dev/null || pkill -f "medusa.*develop" 2>/dev/null || true
-        sudo pkill -f "medusa.*start" 2>/dev/null || pkill -f "medusa.*start" 2>/dev/null || true
+        pkill -f "yarn.*dev.*kbeauty-app[^-]" 2>/dev/null || true
+        pkill -f "medusa.*develop" 2>/dev/null || true
     elif [[ "$service_name" == "storefront" ]]; then
-        sudo pkill -f "yarn.*dev.*kbeauty-app-storefront" 2>/dev/null || pkill -f "yarn.*dev.*kbeauty-app-storefront" 2>/dev/null || true
-        sudo pkill -f "next.*dev.*10004" 2>/dev/null || pkill -f "next.*dev.*10004" 2>/dev/null || true
-        sudo pkill -f "next.*dev.*8000" 2>/dev/null || pkill -f "next.*dev.*8000" 2>/dev/null || true
+        pkill -f "yarn.*dev.*kbeauty-app-storefront" 2>/dev/null || true
+        pkill -f "next.*dev.*10004" 2>/dev/null || true
+        pkill -f "next.*dev.*8000" 2>/dev/null || true  # 잘못된 설정 정리
     fi
     
     # 기존 PID 파일 정리
@@ -272,36 +266,22 @@ cleanup_service_processes() {
 stop_process() {
     local service_name="$1"
     local pid_file="$PID_DIR/${service_name}.pid"
-    local port=""
     
-    # 서비스별 포트 설정
-    if [[ "$service_name" == "backend" ]]; then
-        port="$BACKEND_PORT"
-    elif [[ "$service_name" == "storefront" ]]; then
-        port="$STOREFRONT_PORT"
-    fi
-    
-    # PID 파일 기반 종료 시도
     if is_process_running "$pid_file"; then
         local pid=$(cat "$pid_file")
         echo -e "${YELLOW}🛑 ${service_name} 중지 중... (PID: $pid)${NC}"
-        kill $pid 2>/dev/null || true
+        kill $pid
         sleep 2
         
         if ps -p "$pid" > /dev/null 2>&1; then
             echo -e "${YELLOW}   강제 종료 중...${NC}"
-            kill -9 $pid 2>/dev/null || true
+            kill -9 $pid
         fi
         
         rm -f "$pid_file"
         echo -e "${GREEN}✅ ${service_name}가 중지되었습니다.${NC}"
     else
         echo -e "${YELLOW}⚠️  ${service_name}가 실행 중이 아닙니다.${NC}"
-    fi
-    
-    # 포트 기반 강제 정리 (PID 파일이 없어도 실행 중인 프로세스 제거)
-    if [[ -n "$port" ]]; then
-        cleanup_service_processes "$service_name" "$port"
     fi
 }
 
@@ -318,13 +298,8 @@ check_service_status() {
         if is_port_in_use "$port"; then
             # 추가적으로 HTTP 응답 확인 (storefront/backend의 경우)
             if [[ "$service_name" == "backend" ]]; then
-                local api_check=$(curl -s "http://localhost:$port/health" > /dev/null 2>&1 && echo "ok" || echo "fail")
-                local admin_check=$(curl -s -I "http://localhost:$port/app" | head -1 | grep -q "200 OK" && echo "ok" || echo "fail")
-                
-                if [[ "$api_check" == "ok" && "$admin_check" == "ok" ]]; then
-                    echo -e "${GREEN}✅ 실행 중 (PID: $pid, 포트: $port, API+Admin: 정상)${NC}"
-                elif [[ "$api_check" == "ok" ]]; then
-                    echo -e "${YELLOW}⚠️  실행 중 (PID: $pid, 포트: $port, API: 정상, Admin: 준비중)${NC}"
+                if curl -s "http://localhost:$port/health" > /dev/null 2>&1; then
+                    echo -e "${GREEN}✅ 실행 중 (PID: $pid, 포트: $port, 응답: 정상)${NC}"
                 else
                     echo -e "${YELLOW}⚠️  실행 중이나 API 응답 없음 (PID: $pid, 포트: $port)${NC}"
                 fi
@@ -355,76 +330,16 @@ check_docker_status() {
     sudo docker-compose ps --format "table {{.Service}}\t{{.State}}\t{{.Ports}}"
 }
 
-# 함수: Admin 패널 전용 체크
-check_admin_status() {
-    echo -e "${CYAN}🌸 관리자 패널 상태 확인${NC}\n"
-    
-    # 백엔드 서버 실행 여부
-    echo -n "백엔드 서버: "
-    if is_port_in_use "$BACKEND_PORT"; then
-        echo -e "${GREEN}✅ 실행 중 (포트 $BACKEND_PORT)${NC}"
-    else
-        echo -e "${RED}❌ 중지됨${NC}"
-        echo -e "${YELLOW}💡 다음 명령어로 시작하세요: ./scripts/kbeauty-manager.sh start backend${NC}"
-        return 1
-    fi
-    
-    # API 엔드포인트 체크
-    echo -n "API 엔드포인트: "
-    if curl -s "http://localhost:$BACKEND_PORT/health" > /dev/null 2>&1; then
-        echo -e "${GREEN}✅ 정상 응답${NC}"
-    else
-        echo -e "${RED}❌ 응답 없음${NC}"
-    fi
-    
-    # Admin 페이지 접근성
-    echo -n "Admin 페이지: "
-    local admin_response=$(curl -s -I "http://localhost:$BACKEND_PORT/app" | head -1)
-    if echo "$admin_response" | grep -q "200 OK"; then
-        echo -e "${GREEN}✅ 접근 가능 (http://localhost:$BACKEND_PORT/app)${NC}"
-    elif echo "$admin_response" | grep -q "302"; then
-        echo -e "${YELLOW}🔄 리다이렉트됨 (정상)${NC}"
-    else
-        echo -e "${RED}❌ 접근 불가${NC}"
-        echo -e "${YELLOW}💡 백엔드 서버 재시작을 시도해보세요${NC}"
-    fi
-    
-    # Amazon 통합 모듈 체크
-    echo -n "Amazon 통합: "
-    if curl -s "http://localhost:$BACKEND_PORT/admin/amazon/marketplaces" -H "Accept: application/json" > /dev/null 2>&1; then
-        echo -e "${GREEN}✅ 활성화됨${NC}"
-    else
-        echo -e "${YELLOW}⚠️  확인 필요 (로그인 후 접근 가능)${NC}"
-    fi
-    
-    echo ""
-    echo -e "${WHITE}📋 기본 관리자 계정:${NC}"
-    echo -e "   이메일: ${CYAN}admin@medusa-test.com${NC}"
-    echo -e "   비밀번호: ${CYAN}supersecret${NC}"
-    echo ""
-    echo -e "${WHITE}🔗 빠른 접속 링크:${NC}"
-    echo -e "   로컬: ${CYAN}http://localhost:$BACKEND_PORT/app${NC}"
-    echo -e "   도메인: ${CYAN}http://admin.kbeauty.market/app${NC} (nginx 프록시 사용시)"
-}
-
 # 함수: 헬스 체크
 health_check() {
     echo -e "${CYAN}🏥 헬스 체크 진행 중...${NC}\n"
     
-    # 백엔드 API 헬스 체크
+    # 백엔드 헬스 체크
     echo -n "백엔드 API: "
     if curl -s http://localhost:$BACKEND_PORT/health > /dev/null 2>&1; then
         echo -e "${GREEN}✅ 정상${NC}"
     else
         echo -e "${RED}❌ 응답 없음${NC}"
-    fi
-    
-    # Admin 페이지 헬스 체크
-    echo -n "관리자 패널: "
-    if curl -s -I http://localhost:$BACKEND_PORT/app | head -1 | grep -q "200 OK"; then
-        echo -e "${GREEN}✅ 정상 (http://localhost:$BACKEND_PORT/app)${NC}"
-    else
-        echo -e "${RED}❌ 접근 불가${NC}"
     fi
     
     # 스토어프론트 헬스 체크
@@ -738,94 +653,69 @@ main() {
     local command="$1"
     local service="${2:-all}"
     
-    # 빠른 별칭들 처리
     case "$command" in
+        # 빠른 별칭들
         "start-all")
             command="start"
             service="all"
-            ;;
+            ;&
         "stop-all")
-            command="stop"
-            service="all"
-            ;;
+            if [[ "$command" == "stop-all" ]]; then
+                command="stop"
+                service="all"
+            fi
+            ;&
         "restart-all")
-            command="restart"
-            service="all"
-            ;;
+            if [[ "$command" == "restart-all" ]]; then
+                command="restart"
+                service="all"
+            fi
+            ;&
         "start-backend")
-            command="start"
-            service="backend"
-            ;;
+            if [[ "$command" == "start-backend" ]]; then
+                command="start"
+                service="backend"
+            fi
+            ;&
         "start-frontend")
-            command="start"
-            service="storefront"
-            ;;
+            if [[ "$command" == "start-frontend" ]]; then
+                command="start"
+                service="storefront"
+            fi
+            ;&
         "start-docker")
-            command="start"
-            service="docker"
-            ;;
+            if [[ "$command" == "start-docker" ]]; then
+                command="start"
+                service="docker"
+            fi
+            ;&
         "stop-backend")
-            command="stop"
-            service="backend"
-            ;;
+            if [[ "$command" == "stop-backend" ]]; then
+                command="stop"
+                service="backend"
+            fi
+            ;&
         "stop-frontend")
-            command="stop"
-            service="storefront"
-            ;;
+            if [[ "$command" == "stop-frontend" ]]; then
+                command="stop"
+                service="storefront"
+            fi
+            ;&
         "stop-docker")
-            command="stop"
-            service="docker"
-            ;;
-    esac
-    
-    # 실제 명령 실행
-    case "$command" in
+            if [[ "$command" == "stop-docker" ]]; then
+                command="stop"
+                service="docker"
+            fi
+            ;&
         "start")
             print_header
             case "$service" in
                 "all")
-                    echo -e "${CYAN}🚀 전체 서비스 시작 중...${NC}"
-                    
-                    # 1. Docker 서비스 시작
-                    if ! start_docker; then
-                        echo -e "${RED}❌ Docker 서비스 시작 실패로 중단합니다.${NC}"
-                        return 1
-                    fi
-                    
-                    # 2. 데이터베이스 준비 대기 (최대 30초)
-                    echo -e "${CYAN}⏳ 데이터베이스 서비스 준비 대기 중...${NC}"
-                    local wait_count=0
-                    while ! nc -z localhost 10002 2>/dev/null && [ $wait_count -lt 30 ]; do
-                        sleep 1
-                        ((wait_count++))
-                    done
-                    
-                    if [ $wait_count -ge 30 ]; then
-                        echo -e "${YELLOW}⚠️  데이터베이스 연결 대기 시간 초과, 계속 진행합니다.${NC}"
-                    else
-                        echo -e "${GREEN}✅ 데이터베이스 준비 완료${NC}"
-                    fi
-                    
-                    # 3. 백엔드 시작
-                    if ! start_backend; then
-                        echo -e "${RED}❌ 백엔드 시작 실패${NC}"
-                        return 1
-                    fi
+                    start_docker
+                    sleep 3
+                    start_backend
                     sleep 2
-                    
-                    # 4. 스토어프론트 시작
-                    if ! start_storefront; then
-                        echo -e "${RED}❌ 스토어프론트 시작 실패${NC}"
-                        return 1
-                    fi
-                    
-                    echo -e "${GREEN}🎉 모든 서비스가 성공적으로 시작되었습니다!${NC}"
-                    echo -e "${CYAN}📍 서비스 URL:${NC}"
-                    echo -e "   • 백엔드 API: http://localhost:$BACKEND_PORT"
-                    echo -e "   • 관리자 패널: http://localhost:$BACKEND_PORT/app"
-                    echo -e "   • 스토어프론트: http://localhost:$STOREFRONT_PORT"
-                    echo -e "   • 데이터베이스 관리: http://localhost:10008"
-                    echo -e "   • 파일 저장소: http://localhost:10010"
+                    start_storefront
                     ;;
                 "docker")
                     start_docker
@@ -891,50 +781,6 @@ main() {
         "health")
             print_header
             health_check
-            ;;
-        "admin")
-            print_header
-            check_admin_status
-            ;;
-        "restart-admin")
-            print_header
-            echo -e "${YELLOW}🔄 Admin 패널 재시작 중...${NC}"
-            echo -e "${CYAN}📋 Docker 서비스는 그대로 유지하고 백엔드(Admin)만 재시작합니다.${NC}"
-            
-            # 백엔드만 중지하고 재시작
-            stop_process "backend"
-            sleep 3
-            start_backend
-            
-            # 잠시 대기 후 admin 상태 확인
-            echo -e "${CYAN}🔍 Admin 상태 확인 중...${NC}"
-            sleep 10
-            check_admin_status
-            ;;
-        "admin-fix")
-            print_header
-            echo -e "${YELLOW}🔧 Admin 트러블슈팅 시작...${NC}"
-            echo -e "${CYAN}📋 Admin 로딩 문제를 진단하고 수정합니다.${NC}"
-            
-            # 캐시 정리
-            echo -e "${CYAN}🧹 개발 캐시 정리 중...${NC}"
-            sudo rm -rf kbeauty-app/.medusa/
-            sudo rm -rf kbeauty-app/node_modules/.vite/
-            sudo chown -R barahime:barahime kbeauty-app/
-            
-            # 백엔드 재시작
-            echo -e "${CYAN}🔄 백엔드 재시작 중...${NC}"
-            stop_process "backend"
-            sleep 3
-            start_backend
-            
-            # 상태 확인
-            echo -e "${CYAN}⏳ 15초 대기 후 상태 확인...${NC}"
-            sleep 15
-            check_admin_status
-            
-            echo -e "${GREEN}✅ 트러블슈팅 완료!${NC}"
-            echo -e "${YELLOW}💡 브라우저에서 Ctrl+Shift+R로 Hard Refresh 하세요!${NC}"
             ;;
         "ports")
             print_header
