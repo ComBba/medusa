@@ -174,31 +174,46 @@ npx medusa exec src/scripts/test-amazon-api-connection.ts
 
 ## 🌍 마켓플레이스 관리
 
-### 관리자 패널에서 마켓플레이스 활성화
+### 관리자 패널에서 마켓플레이스 관리
 
 **접속 방법**:
-- 로컬: `http://localhost:10000/app`
-- 프로덕션: `https://admin.kbeauty.market/app`
+- 로컬: `http://localhost:10000/app/settings/amazon`
+- 프로덕션: `https://admin.kbeauty.market/app/settings/amazon`
 
-**활성화 절차**:
-1. Amazon Integration 메뉴 접속
-2. Marketplaces 섹션에서 원하는 마켓플레이스 선택
-3. "Activate" 버튼 클릭
-4. 자동 동기화 설정 확인
+**사용 가능한 기능**:
+1. **동기화 대시보드**: 실시간 동기화 상태 모니터링
+2. **마켓플레이스 테이블**: 9개 마켓플레이스 목록 및 상태 확인
+3. **마켓플레이스 설정**: 연필 아이콘 클릭하여 Seller ID, MWS Token 설정
+4. **활성화 토글**: 스위치를 통한 마켓플레이스 활성화/비활성화
+5. **연결 테스트**: 선택한 마켓플레이스의 Amazon SP-API 연결 상태 확인
 
 ### 프로그래밍 방식 활성화
 
 ```typescript
-// 미국 마켓플레이스 활성화 예시
-const amazonService = container.resolve("amazon_integration")
-const usMarketplace = await amazonService.listAmazonMarketplaces({
-  marketplace_id: "ATVPDKIKX0DER"
+// 미국 마켓플레이스 활성화 예시 (API 호출)
+const response = await fetch('/admin/amazon/marketplaces', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    marketplace_id: "ATVPDKIKX0DER",
+    seller_id: "YOUR_SELLER_ID",
+    is_active: true,
+    auto_sync: true
+  })
 })
 
-// 활성화 (향후 구현 예정)
-// await amazonService.updateAmazonMarketplace(usMarketplace.id, {
-//   is_active: true
-// })
+// 또는 서비스 직접 호출
+const amazonService = container.resolve("amazon_integration")
+const updated = await amazonService.updateAmazonMarketplaces(
+  [marketplace.id], 
+  {
+    seller_id: "YOUR_SELLER_ID",
+    is_active: true,
+    auto_sync: true
+  }
+)
 ```
 
 ---
@@ -307,13 +322,15 @@ amazon_product_sync
 ```typescript
 // 마켓플레이스 관리
 await amazonService.listAmazonMarketplaces()
-await amazonService.getActiveMarketplaces()
-await amazonService.getSyncStatistics()
+await amazonService.updateAmazonMarketplaces(ids, data)
 
-// 동기화 관리
-await amazonService.getProductSyncStatus(productId)
-await amazonService.getFailedSyncs()
-await amazonService.getPendingSyncs()
+// API 엔드포인트
+GET  /admin/amazon/marketplaces          // 마켓플레이스 목록
+POST /admin/amazon/marketplaces          // 마켓플레이스 생성/업데이트
+POST /admin/amazon/test-connection       // 연결 테스트
+GET  /admin/amazon/sync/stats           // 동기화 통계 (예정)
+GET  /admin/amazon/sync/status/:id      // 상품별 동기화 상태 (예정)
+POST /admin/amazon/sync/:id             // 수동 동기화 (예정)
 ```
 
 ### 환경 변수 참조
@@ -324,7 +341,9 @@ await amazonService.getPendingSyncs()
 | `AMAZON_SP_API_SANDBOX` | ✅ | `true` | 샌드박스 모드 |
 | `AMAZON_LWA_CLIENT_ID` | ✅ | - | LWA 클라이언트 ID |
 | `AMAZON_LWA_CLIENT_SECRET` | ✅ | - | LWA 클라이언트 시크릿 |
-| `AMAZON_SELLER_ID` | ✅ | - | Amazon 셀러 ID |
+| `AMAZON_AWS_ACCESS_KEY_ID` | ✅ | - | AWS 액세스 키 |
+| `AMAZON_AWS_SECRET_ACCESS_KEY` | ✅ | - | AWS 시크릿 키 |
+| `AMAZON_SELLER_ID` | ❌ | - | 기본 셀러 ID (마켓플레이스별 설정 가능) |
 | `AMAZON_AUTO_SYNC_ENABLED` | ❌ | `true` | 자동 동기화 |
 | `AMAZON_SYNC_INTERVAL_MINUTES` | ❌ | `30` | 동기화 간격 |
 | `AMAZON_MAX_RETRY_ATTEMPTS` | ❌ | `3` | 최대 재시도 |
@@ -341,11 +360,20 @@ await amazonService.getPendingSyncs()
 - [x] 환경 설정
 - [x] 샌드박스 테스트
 
-**Phase 2: SP-API 통합** 🚧
+**Phase 2: Admin UI 구현** ✅
+- [x] Settings 하위 Amazon Integration 페이지
+- [x] 마켓플레이스 목록 테이블
+- [x] 마켓플레이스 설정 편집 모달 (Drawer)
+- [x] 활성화/비활성화 토글 기능
+- [x] 동기화 상태 대시보드
+- [x] 연결 테스트 컴포넌트
+
+**Phase 3: SP-API 통합** 🚧
 - [ ] Amazon SP-API SDK 통합
-- [ ] 실제 API 연결 테스트
+- [x] 연결 테스트 API 엔드포인트
+- [ ] 실제 SP-API 호출 구현
 - [ ] 인증 토큰 자동 갱신
-- [ ] 에러 핸들링 개선
+- [x] 에러 핸들링 개선
 
 **Phase 3: 상품 동기화** 📋
 - [ ] 상품 생성 시 자동 등록
@@ -394,6 +422,6 @@ await amazonService.getPendingSyncs()
 
 ---
 
-> **최종 업데이트**: 2025-01-26  
-> **버전**: 1.0.0  
-> **상태**: 샌드박스 테스트 준비 완료 ✅ 
+ > **최종 업데이트**: 2025-01-26  
+> **버전**: 1.2.0  
+> **상태**: Admin UI 구현 완료 ✅ 실제 SP-API 통합 진행 중 🚧 
