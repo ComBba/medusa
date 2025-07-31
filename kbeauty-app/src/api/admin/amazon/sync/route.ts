@@ -20,11 +20,16 @@ export const GET = async (
   const amazonService: AmazonIntegrationModuleService = req.scope.resolve(AMAZON_INTEGRATION_MODULE)
   
   try {
-    const { marketplace_id, status, limit = 50, offset = 0 } = req.query
+    const { marketplace_id, status, limit: limitParam = 50, offset: offsetParam = 0 } = req.query
+    
+    // Query parameters 타입 변환
+    const limit = typeof limitParam === 'string' ? parseInt(limitParam, 10) : (limitParam as number) || 50
+    const offset = typeof offsetParam === 'string' ? parseInt(offsetParam, 10) : (offsetParam as number) || 0
+    const marketplaceId = typeof marketplace_id === 'string' ? marketplace_id : undefined
     
     // 필터 구성
     const filters: any = {}
-    if (marketplace_id) filters.amazon_marketplace_id = marketplace_id
+    if (marketplaceId) filters.amazon_marketplace_id = marketplaceId
     if (status) filters.sync_status = status
     
     // 동기화 레코드 조회
@@ -34,7 +39,7 @@ export const GET = async (
     const paginatedRecords = syncRecords.slice(offset, offset + limit)
     
     // 통계 정보
-    const statistics = await amazonService.getSyncStatistics(marketplace_id)
+    const statistics = await amazonService.getSyncStatistics(marketplaceId)
     
     // 활성 마켓플레이스 목록
     const activeMarketplaces = await amazonService.getActiveMarketplaces()
@@ -129,7 +134,7 @@ export const PUT = async (
   try {
     const { sync_record_ids, marketplace_id } = req.body
     
-    let recordsToRetry = []
+    let recordsToRetry: any[] = []
     
     if (sync_record_ids?.length) {
       // 특정 동기화 레코드들 재시도

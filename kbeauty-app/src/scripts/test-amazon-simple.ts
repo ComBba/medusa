@@ -101,7 +101,7 @@ export default async function testAmazonSimple({ container }: ExecArgs) {
     // 7. 권장 사항 및 다음 단계
     logger.info('📝 6단계: 권장 사항 및 다음 단계')
     
-    const recommendations = []
+    const recommendations: string[] = []
     
     if (!readinessCheck.some_marketplace_active) {
       recommendations.push('관리자 패널에서 최소 1개 마켓플레이스를 활성화하세요')
@@ -148,10 +148,7 @@ export default async function testAmazonSimple({ container }: ExecArgs) {
     }
 
   } catch (error) {
-    logger.error('💥 Amazon 통합 테스트 실패:', {
-      error: error.message,
-      stack: error.stack
-    })
+    logger.error(`💥 Amazon 통합 테스트 실패: ${error.message}`)
     throw error
   }
 } 

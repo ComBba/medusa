@@ -145,12 +145,15 @@ export const POST = async (
     
     if (existingMarketplaces.length > 0) {
       // 업데이트
-      const updated = await amazonService.updateAmazonMarketplaces([existingMarketplaces[0].id], {
-        seller_id,
-        mws_auth_token,
-        is_active: is_active ?? true,
-        auto_sync: auto_sync ?? true,
-      })
+      const updated = await amazonService.updateAmazonMarketplaces(
+        { id: existingMarketplaces[0].id },
+        {
+          seller_id,
+          mws_auth_token,
+          is_active: is_active ?? true,
+          auto_sync: auto_sync ?? true,
+        }
+      )
       
       res.json({
         marketplace: updated[0],

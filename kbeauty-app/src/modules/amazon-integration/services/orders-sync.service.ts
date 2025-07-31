@@ -123,15 +123,11 @@ class OrdersSyncService {
           )
 
           if (!ordersResult.success) {
-            this.logger.error(`${marketplace.name} 주문 조회 실패`, {
-              marketplace_id: marketplace.id
-            })
+            this.logger.error(`${marketplace.name} 주문 조회 실패 - Marketplace: ${marketplace.id}`)
             continue
           }
 
-          this.logger.info(`${marketplace.name} 신규 주문`, {
-            count: ordersResult.orders.length
-          })
+          this.logger.info(`${marketplace.name} 신규 주문 - Count: ${ordersResult.orders.length}`)
 
           // 각 주문 처리
           for (const amazonOrder of ordersResult.orders) {
@@ -148,10 +144,7 @@ class OrdersSyncService {
                 currency: amazonOrder.order_total.currency_code
               })
 
-              this.logger.error(`주문 처리 실패`, {
-                amazon_order_id: amazonOrder.amazon_order_id,
-                error: error.message
-              })
+              this.logger.error(`주문 처리 실패 - Amazon Order: ${amazonOrder.amazon_order_id}, Error: ${error.message}`)
             }
           }
 
@@ -159,22 +152,15 @@ class OrdersSyncService {
           await this.updateLastOrderSyncTime(marketplace.id, new Date())
 
         } catch (error) {
-          this.logger.error(`마켓플레이스 주문 동기화 실패`, {
-            marketplace: marketplace.name,
-            error: error.message
-          })
+          this.logger.error(`마켓플레이스 주문 동기화 실패 - Marketplace: ${marketplace.name}, Error: ${error.message}`)
         }
       }
 
-      this.logger.info(`Amazon 주문 동기화 완료`, {
-        total_orders: allResults.length,
-        successful: allResults.filter(r => r.sync_action !== 'failed').length,
-        failed: allResults.filter(r => r.sync_action === 'failed').length
-      })
+      this.logger.info(`Amazon 주문 동기화 완료 - Total: ${allResults.length}, Success: ${allResults.filter(r => r.sync_action !== 'failed').length}, Failed: ${allResults.filter(r => r.sync_action === 'failed').length}`)
 
       return allResults
     } catch (error) {
-      this.logger.error(`Amazon 주문 동기화 중 오류`, { error: error.message })
+      this.logger.error(`Amazon 주문 동기화 중 오류: ${error.message}`)
       return []
     }
   }
@@ -258,12 +244,7 @@ class OrdersSyncService {
       // const createdOrder = await orderService.create(medusaOrderData)
       const mockOrderId = `medusa_order_${Date.now()}`
 
-      this.logger.info(`Amazon 주문을 Medusa 주문으로 생성`, {
-        amazon_order_id: amazonOrder.amazon_order_id,
-        medusa_order_id: mockOrderId,
-        total: amazonOrder.order_total.amount,
-        currency: amazonOrder.order_total.currency_code
-      })
+      this.logger.info(`Amazon 주문을 Medusa 주문으로 생성 - Amazon Order: ${amazonOrder.amazon_order_id}, Medusa Order: ${mockOrderId}, Total: ${amazonOrder.order_total.amount} ${amazonOrder.order_total.currency_code}`)
 
       return {
         amazon_order_id: amazonOrder.amazon_order_id,
@@ -274,10 +255,7 @@ class OrdersSyncService {
         currency: amazonOrder.order_total.currency_code
       }
     } catch (error) {
-      this.logger.error(`Medusa 주문 생성 실패`, {
-        amazon_order_id: amazonOrder.amazon_order_id,
-        error: error.message
-      })
+      this.logger.error(`Medusa 주문 생성 실패 - Order: ${amazonOrder.amazon_order_id}, Error: ${error.message}`)
       
       throw error
     }
@@ -301,9 +279,7 @@ class OrdersSyncService {
         })
 
         if (syncRecords.length === 0) {
-          this.logger.warn(`SKU에 해당하는 동기화 레코드를 찾을 수 없습니다`, {
-            sku: amazonItem.seller_sku
-          })
+          this.logger.warn(`SKU에 해당하는 동기화 레코드를 찾을 수 없습니다 - SKU: ${amazonItem.seller_sku}`)
           continue
         }
 
@@ -323,11 +299,7 @@ class OrdersSyncService {
           total: amazonItem.item_price.amount
         })
       } catch (error) {
-        this.logger.error(`Amazon 아이템 매핑 실패`, {
-          amazon_item_id: amazonItem.order_item_id,
-          sku: amazonItem.seller_sku,
-          error: error.message
-        })
+        this.logger.error(`Amazon 아이템 매핑 실패 - Item: ${amazonItem.order_item_id}, SKU: ${amazonItem.seller_sku}, Error: ${error.message}`)
       }
     }
 
@@ -381,11 +353,7 @@ class OrdersSyncService {
         )
 
         if (result.success) {
-          this.logger.info(`Amazon 주문 배송 정보 업데이트 완료`, {
-            medusa_order_id: medusaOrderId,
-            amazon_order_id: amazonOrderId,
-            tracking_number: trackingInfo.tracking_number
-          })
+          this.logger.info(`Amazon 주문 배송 정보 업데이트 완료 - Medusa Order: ${medusaOrderId}, Amazon Order: ${amazonOrderId}, Tracking: ${trackingInfo.tracking_number}`)
           
           return {
             success: true,
@@ -405,10 +373,7 @@ class OrdersSyncService {
         message: '상태 동기화가 완료되었습니다'
       }
     } catch (error) {
-      this.logger.error(`Medusa → Amazon 상태 동기화 실패`, {
-        medusa_order_id: medusaOrderId,
-        error: error.message
-      })
+      this.logger.error(`Medusa → Amazon 상태 동기화 실패 - Order: ${medusaOrderId}, Error: ${error.message}`)
       
       return {
         success: false,
@@ -437,7 +402,7 @@ class OrdersSyncService {
         config: this.config
       }
     } catch (error) {
-      this.logger.error(`주문 동기화 통계 조회 실패`, { error: error.message })
+      this.logger.error(`주문 동기화 통계 조회 실패 - Error: ${error.message}`)
       return {
         total_synced_orders: 0,
         pending_orders: 0,
@@ -453,7 +418,7 @@ class OrdersSyncService {
    */
   updateConfig(newConfig: Partial<OrdersSyncConfig>): void {
     this.config = { ...this.config, ...newConfig }
-    this.logger.info(`주문 동기화 설정 업데이트`, this.config)
+    this.logger.info(`주문 동기화 설정 업데이트 - Config: ${JSON.stringify(this.config)}`)
   }
 
   // ===========================================
@@ -467,10 +432,7 @@ class OrdersSyncService {
 
   private async updateLastOrderSyncTime(marketplaceId: string, syncTime: Date): Promise<void> {
     // TODO: 실제 데이터베이스에 마지막 동기화 시간 저장
-    this.logger.debug(`마지막 주문 동기화 시간 업데이트`, {
-      marketplace_id: marketplaceId,
-      sync_time: syncTime
-    })
+    this.logger.debug(`마지막 주문 동기화 시간 업데이트 - Marketplace: ${marketplaceId}, Time: ${syncTime}`)
   }
 
   private async findMedusaOrderByAmazonId(amazonOrderId: string): Promise<MedusaOrderData | null> {
@@ -498,11 +460,7 @@ class OrdersSyncService {
       
       if (existingOrder.status !== newStatus) {
         // TODO: 실제 Order Service를 사용해서 주문 상태 업데이트
-        this.logger.info(`주문 상태 업데이트`, {
-          medusa_order_id: existingOrder.id,
-          old_status: existingOrder.status,
-          new_status: newStatus
-        })
+        this.logger.info(`주문 상태 업데이트 - Order: ${existingOrder.id}, Status: ${existingOrder.status} -> ${newStatus}, Amazon: ${amazonOrder.amazon_order_id}`)
       }
 
       return {

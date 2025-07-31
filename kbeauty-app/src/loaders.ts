@@ -10,10 +10,7 @@ import { Logger } from "@medusajs/framework/types"
 export default ({ container }) => {
   const logger: Logger = container.resolve("logger")
   
-  logger.info("🌸 kbeauty.market 모듈 로딩 시작...", {
-    app: "kbeauty.market",
-    mode: process.env.NODE_ENV || "development"
-  })
+  logger.info(`🌸 kbeauty.market 모듈 로딩 시작... - App: kbeauty.market, Mode: ${process.env.NODE_ENV || "development"}`)
 
   try {
     // ===========================================
@@ -31,18 +28,10 @@ export default ({ container }) => {
     // - analytics-integration (K-Beauty 전용 분석)
     // - notification-integration (한국어 알림)
 
-    logger.info("🎉 모든 모듈 로딩 완료", {
-      loaded_modules: [
-        "amazon-integration"
-      ],
-      status: "ready"
-    })
+    logger.info(`🎉 모든 모듈 로딩 완료 - Modules: amazon-integration, Status: ready`)
 
   } catch (error) {
-    logger.error("💥 모듈 로딩 중 오류 발생", {
-      error: error.message,
-      stack: error.stack
-    })
+    logger.error(`💥 모듈 로딩 중 오류 발생: ${error.message}`)
     throw error
   }
 } 

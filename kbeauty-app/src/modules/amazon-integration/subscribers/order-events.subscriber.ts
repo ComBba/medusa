@@ -87,19 +87,14 @@ export default async function orderEventsSubscriber({
     amazonService
   })
 
-  logger.info(`📦 주문 이벤트 수신`, {
-    event_name: event.name,
-    order_id: event.data.order_id || event.data.id
-  })
+  const eventOrderId = (event.data as any).order_id || event.data.id
+  logger.info(`📦 주문 이벤트 수신 - Event: ${event.name}, Order: ${eventOrderId}`)
 
   try {
     // Amazon 기원 주문인지 확인 (Amazon에서 온 주문은 역동기화 방지)
     const orderData = event.data as OrderEventData
     if (orderData.metadata?.amazon_order_id) {
-      logger.debug(`Amazon 기원 주문 이벤트 스킵`, {
-        order_id: orderData.id,
-        amazon_order_id: orderData.metadata.amazon_order_id
-      })
+      logger.debug(`Amazon 기원 주문 이벤트 스킵 - Order: ${orderData.id}, Amazon Order: ${orderData.metadata.amazon_order_id}`)
       return
     }
 
@@ -111,12 +106,8 @@ export default async function orderEventsSubscriber({
     }
 
   } catch (error) {
-    logger.error(`💥 주문 이벤트 처리 중 오류`, {
-      event_name: event.name,
-      order_id: event.data.order_id || event.data.id,
-      error: error.message,
-      stack: error.stack
-    })
+    const errorOrderId = (event.data as any).order_id || event.data.id
+    logger.error(`💥 주문 이벤트 처리 중 오류 - Event: ${event.name}, Order: ${errorOrderId}, Error: ${error.message}`)
   }
 }
 
@@ -134,17 +125,11 @@ async function handleOrderEvent(
   const hasAmazonProducts = await checkIfOrderHasAmazonProducts(orderData, logger)
   
   if (!hasAmazonProducts) {
-    logger.debug(`Amazon 상품이 없는 주문`, {
-      order_id: orderData.id
-    })
+    logger.debug(`Amazon 상품이 없는 주문 - Order: ${orderData.id}`)
     return
   }
 
-  logger.info(`🔄 Amazon 연관 주문 상태 변경`, {
-    order_id: orderData.id,
-    status: orderData.status,
-    previous_status: orderData.previous_status
-  })
+  logger.info(`🔄 Amazon 연관 주문 상태 변경 - Order: ${orderData.id}, Status: ${orderData.status}, Previous: ${orderData.previous_status}`)
 
   switch (event.name) {
     case 'order.placed':
@@ -160,10 +145,7 @@ async function handleOrderEvent(
       break
     
     default:
-      logger.debug(`처리하지 않는 주문 이벤트`, {
-        event_name: event.name,
-        order_id: orderData.id
-      })
+      logger.debug(`처리하지 않는 주문 이벤트 - Event: ${event.name}, Order: ${orderData.id}`)
   }
 }
 
@@ -177,12 +159,7 @@ async function handleFulfillmentEvent(
 ) {
   const fulfillmentData = event.data as FulfillmentEventData
 
-  logger.info(`🚚 배송 이벤트 처리`, {
-    event_name: event.name,
-    fulfillment_id: fulfillmentData.id,
-    order_id: fulfillmentData.order_id,
-    tracking_numbers: fulfillmentData.tracking_numbers
-  })
+  logger.info(`🚚 배송 이벤트 처리 - Event: ${event.name}, Fulfillment: ${fulfillmentData.id}, Order: ${fulfillmentData.order_id}, Tracking: ${fulfillmentData.tracking_numbers?.length || 0}`)
 
   switch (event.name) {
     case 'fulfillment.created':
@@ -198,10 +175,7 @@ async function handleFulfillmentEvent(
       break
     
     default:
-      logger.debug(`처리하지 않는 배송 이벤트`, {
-        event_name: event.name,
-        fulfillment_id: fulfillmentData.id
-      })
+      logger.debug(`처리하지 않는 배송 이벤트 - Event: ${event.name}, Fulfillment: ${fulfillmentData.id}`)
   }
 }
 
@@ -213,17 +187,11 @@ async function handleOrderPlaced(
   ordersSyncService: OrdersSyncService,
   logger: Logger
 ) {
-  logger.info(`📝 새 주문 생성 감지`, {
-    order_id: orderData.id,
-    total: orderData.total,
-    currency: orderData.currency_code
-  })
+  logger.info(`📝 새 주문 생성 감지 - Order: ${orderData.id}, Total: ${orderData.total}, Currency: ${orderData.currency_code}`)
   
   // 새 주문의 경우 일반적으로 Amazon 동기화가 필요하지 않음
   // (Amazon에서 온 주문을 Medusa로 동기화하는 것이 일반적)
-  logger.debug(`새 주문은 Amazon 동기화 대상이 아님`, {
-    order_id: orderData.id
-  })
+  logger.debug(`새 주문은 Amazon 동기화 대상이 아님 - Order: ${orderData.id}`)
 }
 
 /**
@@ -234,15 +202,11 @@ async function handleOrderCompleted(
   ordersSyncService: OrdersSyncService,
   logger: Logger
 ) {
-  logger.info(`✅ 주문 완료 처리`, {
-    order_id: orderData.id
-  })
+  logger.info(`✅ 주문 완료 처리 - Order: ${orderData.id}`)
 
   // 주문 완료는 일반적으로 결제 완료를 의미
   // Amazon과의 특별한 동기화는 필요하지 않을 수 있음
-  logger.debug(`주문 완료 - Amazon 동기화 스킵`, {
-    order_id: orderData.id
-  })
+  logger.debug(`주문 완료 - Amazon 동기화 스킵 - Order: ${orderData.id}`)
 }
 
 /**
@@ -253,15 +217,11 @@ async function handleOrderCanceled(
   ordersSyncService: OrdersSyncService,
   logger: Logger
 ) {
-  logger.info(`❌ 주문 취소 처리`, {
-    order_id: orderData.id
-  })
+  logger.info(`❌ 주문 취소 처리 - Order: ${orderData.id}`)
 
   // Amazon 기원 주문이 Medusa에서 취소된 경우 Amazon에 알려야 할 수 있음
   // 하지만 일반적으로는 Amazon에서 먼저 취소되고 Medusa로 전파됨
-  logger.debug(`주문 취소 - Amazon 동기화 검토 필요`, {
-    order_id: orderData.id
-  })
+  logger.debug(`주문 취소 - Amazon 동기화 검토 필요 - Order: ${orderData.id}`)
 }
 
 /**
@@ -272,16 +232,11 @@ async function handleFulfillmentCreated(
   ordersSyncService: OrdersSyncService,
   logger: Logger
 ) {
-  logger.info(`📋 배송 생성 처리`, {
-    fulfillment_id: fulfillmentData.id,
-    order_id: fulfillmentData.order_id
-  })
+  logger.info(`📋 배송 생성 처리 - Fulfillment: ${fulfillmentData.id}, Order: ${fulfillmentData.order_id}`)
 
   // 배송이 시작되었지만 아직 shipped가 아닌 상태
   // Amazon에는 실제 배송 완료 시점에 알리는 것이 좋음
-  logger.debug(`배송 생성 - 실제 배송 시까지 대기`, {
-    fulfillment_id: fulfillmentData.id
-  })
+  logger.debug(`배송 생성 - 실제 배송 시까지 대기 - Fulfillment: ${fulfillmentData.id}`)
 }
 
 /**
@@ -292,20 +247,13 @@ async function handleFulfillmentShipped(
   ordersSyncService: OrdersSyncService,
   logger: Logger
 ) {
-  logger.info(`🚚 배송 완료 - Amazon 동기화 시작`, {
-    fulfillment_id: fulfillmentData.id,
-    order_id: fulfillmentData.order_id,
-    tracking_numbers: fulfillmentData.tracking_numbers
-  })
+  logger.info(`🚚 배송 완료 - Amazon 동기화 시작 - Fulfillment: ${fulfillmentData.id}, Order: ${fulfillmentData.order_id}, Tracking: ${fulfillmentData.tracking_numbers?.length || 0}`)
 
   try {
     const trackingNumber = fulfillmentData.tracking_numbers?.[0]
     
     if (!trackingNumber) {
-      logger.warn(`추적 번호가 없는 배송`, {
-        fulfillment_id: fulfillmentData.id,
-        order_id: fulfillmentData.order_id
-      })
+      logger.warn(`추적 번호가 없는 배송 - Fulfillment: ${fulfillmentData.id}, Order: ${fulfillmentData.order_id}`)
       return
     }
 
@@ -321,25 +269,13 @@ async function handleFulfillmentShipped(
     )
 
     if (result.success) {
-      logger.info(`✅ Amazon 배송 정보 업데이트 완료`, {
-        order_id: fulfillmentData.order_id,
-        tracking_number: trackingNumber,
-        message: result.message
-      })
+      logger.info(`✅ Amazon 배송 정보 업데이트 완료 - Order: ${fulfillmentData.order_id}, Tracking: ${trackingNumber}, Message: ${result.message}`)
     } else {
-      logger.error(`❌ Amazon 배송 정보 업데이트 실패`, {
-        order_id: fulfillmentData.order_id,
-        tracking_number: trackingNumber,
-        error: result.message
-      })
+      logger.error(`❌ Amazon 배송 정보 업데이트 실패 - Order: ${fulfillmentData.order_id}, Tracking: ${trackingNumber}, Error: ${result.message}`)
     }
 
   } catch (error) {
-    logger.error(`💥 배송 완료 처리 중 오류`, {
-      fulfillment_id: fulfillmentData.id,
-      order_id: fulfillmentData.order_id,
-      error: error.message
-    })
+    logger.error(`💥 배송 완료 처리 중 오류 - Fulfillment: ${fulfillmentData.id}, Order: ${fulfillmentData.order_id}, Error: ${error.message}`)
   }
 }
 
@@ -351,16 +287,10 @@ async function handleFulfillmentCanceled(
   ordersSyncService: OrdersSyncService,
   logger: Logger
 ) {
-  logger.info(`🚫 배송 취소 처리`, {
-    fulfillment_id: fulfillmentData.id,
-    order_id: fulfillmentData.order_id
-  })
+  logger.info(`🚫 배송 취소 처리 - Fulfillment: ${fulfillmentData.id}, Order: ${fulfillmentData.order_id}`)
 
   // 배송이 취소된 경우 Amazon에 알려야 할 수 있음
-  logger.debug(`배송 취소 - Amazon 동기화 검토 필요`, {
-    fulfillment_id: fulfillmentData.id,
-    order_id: fulfillmentData.order_id
-  })
+  logger.debug(`배송 취소 - Amazon 동기화 검토 필요 - Fulfillment: ${fulfillmentData.id}, Order: ${fulfillmentData.order_id}`)
 }
 
 /**
@@ -378,11 +308,7 @@ async function checkIfOrderHasAmazonProducts(
   }
 
   // 임시로 true 반환 (실제로는 각 상품별로 동기화 상태 확인 필요)
-  logger.debug(`주문 상품 Amazon 동기화 상태 확인 필요`, {
-    order_id: orderData.id,
-    item_count: orderData.items.length,
-    product_ids: orderData.items.map(item => item.product_id)
-  })
+  logger.debug(`주문 상품 Amazon 동기화 상태 확인 필요 - Order: ${orderData.id}, Items: ${orderData.items.length}, Products: ${orderData.items.map(item => item.product_id).join(', ')}`)
 
   return true
 }

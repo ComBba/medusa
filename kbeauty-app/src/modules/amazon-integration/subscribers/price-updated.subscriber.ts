@@ -64,11 +64,7 @@ export default async function priceUpdatedSubscriber({
     amazonService
   })
 
-  logger.info(`💰 가격 변경 이벤트 수신`, {
-    event_name: event.name,
-    data_id: event.data.id,
-    product_id: event.data.product_id
-  })
+  logger.info(`💰 가격 변경 이벤트 수신 - Event: ${event.name}, ID: ${event.data.id}, Product: ${event.data.product_id}`)
 
   try {
     let productId: string | undefined
@@ -96,10 +92,7 @@ export default async function priceUpdatedSubscriber({
       }
 
       if (!hasSignificantPriceChange) {
-        logger.debug(`의미있는 가격 변경이 없음`, {
-          variant_id: variantData.id,
-          product_id: variantData.product_id
-        })
+        logger.debug(`의미있는 가격 변경이 없음 - Variant: ${variantData.id}, Product: ${variantData.product_id}`)
         return
       }
 
@@ -113,21 +106,14 @@ export default async function priceUpdatedSubscriber({
         max_quantity: price.max_quantity
       }))
 
-      logger.info(`🔄 상품 변형 가격 업데이트 감지`, {
-        variant_id: variantData.id,
-        product_id: variantData.product_id,
-        price_count: priceData.length,
-        currencies: priceData.map(p => p.currency_code)
-      })
+      logger.info(`🔄 상품 변형 가격 업데이트 감지 - Variant: ${variantData.id}, Product: ${variantData.product_id}, Prices: ${priceData.length}, Currencies: ${priceData.map(p => p.currency_code).join(',')}`)
 
     } else {
       // price.* 이벤트들
       const priceEventData = event.data as PriceUpdatedEventData
       
       if (!priceEventData.product_id) {
-        logger.debug(`상품 ID가 없는 가격 이벤트 스킵`, {
-          price_id: priceEventData.id
-        })
+        logger.debug(`상품 ID가 없는 가격 이벤트 스킵 - Price ID: ${priceEventData.id}`)
         return
       }
 
@@ -139,12 +125,7 @@ export default async function priceUpdatedSubscriber({
       const amountDifference = Math.abs(currentAmount - previousAmount)
 
       if (amountDifference < 100) { // 1 단위 미만 변경은 스킵
-        logger.debug(`가격 변경량이 임계값 미만`, {
-          price_id: priceEventData.id,
-          previous: previousAmount / 100,
-          current: currentAmount / 100,
-          difference: amountDifference / 100
-        })
+        logger.debug(`가격 변경량이 임계값 미만 - Price: ${priceEventData.id}, Previous: ${previousAmount / 100}, Current: ${currentAmount / 100}, Diff: ${amountDifference / 100}`)
         return
       }
 
@@ -158,20 +139,11 @@ export default async function priceUpdatedSubscriber({
         region_id: priceEventData.region_id
       }]
 
-      logger.info(`💲 개별 가격 업데이트 감지`, {
-        price_id: priceEventData.id,
-        product_id: priceEventData.product_id,
-        currency: priceEventData.currency_code,
-        amount: priceEventData.amount / 100,
-        previous_amount: previousAmount / 100
-      })
+      logger.info(`💲 개별 가격 업데이트 감지 - Price: ${priceEventData.id}, Product: ${priceEventData.product_id}, Currency: ${priceEventData.currency_code}, Amount: ${priceEventData.amount / 100}, Previous: ${previousAmount / 100}`)
     }
 
     if (!productId || priceData.length === 0) {
-      logger.debug(`처리할 가격 데이터가 없음`, {
-        product_id: productId,
-        price_data_count: priceData.length
-      })
+      logger.debug(`처리할 가격 데이터가 없음 - Product: ${productId}, Count: ${priceData.length}`)
       return
     }
 
@@ -179,9 +151,7 @@ export default async function priceUpdatedSubscriber({
     const syncRecords = await amazonIntegrationService.getProductSyncStatus(productId)
     
     if (!syncRecords || syncRecords.length === 0) {
-      logger.debug(`Amazon 동기화되지 않은 상품의 가격 변경`, {
-        product_id: productId
-      })
+      logger.debug(`Amazon 동기화되지 않은 상품의 가격 변경 - Product: ${productId}`)
       return
     }
 
@@ -191,18 +161,11 @@ export default async function priceUpdatedSubscriber({
     )
 
     if (completedSyncs.length === 0) {
-      logger.debug(`완료된 Amazon 동기화가 없는 상품의 가격 변경`, {
-        product_id: productId
-      })
+      logger.debug(`완료된 Amazon 동기화가 없는 상품의 가격 변경 - Product: ${productId}`)
       return
     }
 
-    logger.info(`🚀 Amazon 가격 동기화 시작`, {
-      product_id: productId,
-      price_data_count: priceData.length,
-      sync_records: completedSyncs.length,
-      currencies: [...new Set(priceData.map(p => p.currency_code))]
-    })
+    logger.info(`🚀 Amazon 가격 동기화 시작 - Product: ${productId}, Prices: ${priceData.length}, Records: ${completedSyncs.length}, Currencies: ${[...new Set(priceData.map(p => p.currency_code))].join(',')}`)
 
     // Amazon 가격 동기화 실행
     const syncResults = await pricingSyncService.syncProductPricing(
@@ -216,42 +179,15 @@ export default async function priceUpdatedSubscriber({
     const skippedSyncs = syncResults.filter(r => r.sync_status === 'skipped')
 
     if (successfulSyncs.length > 0) {
-      logger.info(`✅ Amazon 가격 동기화 성공`, {
-        product_id: productId,
-        successful_marketplaces: successfulSyncs.length,
-        failed_marketplaces: failedSyncs.length,
-        skipped_marketplaces: skippedSyncs.length,
-        results: successfulSyncs.map(r => ({
-          sku: r.sku,
-          marketplace: r.marketplace_id,
-          currency: r.marketplace_currency,
-          price: r.amazon_price
-        }))
-      })
+      logger.info(`✅ Amazon 가격 동기화 성공 - Product: ${productId}, 성공: ${successfulSyncs.length}, 실패: ${failedSyncs.length}, 스킵: ${skippedSyncs.length}`)
     }
 
     if (failedSyncs.length > 0) {
-      logger.error(`❌ Amazon 가격 동기화 일부 실패`, {
-        product_id: productId,
-        failed_count: failedSyncs.length,
-        errors: failedSyncs.map(r => ({
-          sku: r.sku,
-          marketplace: r.marketplace_id,
-          error: r.error_message
-        }))
-      })
+      logger.error(`❌ Amazon 가격 동기화 일부 실패 - Product: ${productId}, 실패 개수: ${failedSyncs.length}`)
     }
 
     if (skippedSyncs.length > 0) {
-      logger.warn(`⏭️ Amazon 가격 동기화 일부 스킵`, {
-        product_id: productId,
-        skipped_count: skippedSyncs.length,
-        reasons: skippedSyncs.map(r => ({
-          sku: r.sku,
-          marketplace: r.marketplace_id,
-          reason: r.error_message
-        }))
-      })
+      logger.warn(`⏭️ Amazon 가격 동기화 일부 스킵 - Product: ${productId}, 스킵 개수: ${skippedSyncs.length}`)
     }
 
     // K-Beauty 특화 가격 전략 적용 여부 확인
@@ -263,31 +199,14 @@ export default async function priceUpdatedSubscriber({
         const priceDifference = Math.abs(japanSync.amazon_price - usSync.amazon_price)
         const percentageDiff = (priceDifference / usSync.amazon_price) * 100
         
-        logger.info(`🌸 K-Beauty 지역별 가격 전략 적용됨`, {
-          product_id: productId,
-          us_price: usSync.amazon_price,
-          jp_price: japanSync.amazon_price,
-          difference_percentage: Math.round(percentageDiff * 100) / 100
-        })
+        logger.info(`🌸 K-Beauty 지역별 가격 전략 적용됨 - Product: ${productId}, US: ${usSync.amazon_price}, JP: ${japanSync.amazon_price}, 차이: ${Math.round(percentageDiff * 100) / 100}%`)
       }
     }
 
-    logger.info(`🏁 가격 변경 이벤트 처리 완료`, {
-      product_id: productId,
-      total_syncs: syncResults.length,
-      successful: successfulSyncs.length,
-      failed: failedSyncs.length,
-      skipped: skippedSyncs.length
-    })
+    logger.info(`🏁 가격 변경 이벤트 처리 완료 - Product: ${productId}, 총: ${syncResults.length}, 성공: ${successfulSyncs.length}, 실패: ${failedSyncs.length}, 스킵: ${skippedSyncs.length}`)
 
   } catch (error) {
-    logger.error(`💥 가격 변경 이벤트 처리 중 오류`, {
-      event_name: event.name,
-      data_id: event.data.id,
-      product_id: event.data.product_id,
-      error: error.message,
-      stack: error.stack
-    })
+    logger.error(`💥 가격 변경 이벤트 처리 중 오류 - Event: ${event.name}, ID: ${event.data.id}, Error: ${error.message}`)
   }
 }
 

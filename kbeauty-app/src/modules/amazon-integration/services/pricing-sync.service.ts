@@ -84,14 +84,14 @@ class PricingSyncService {
     productId: string,
     priceData: MedusaPriceData[]
   ): Promise<PriceSyncResult[]> {
-    this.logger.info(`가격 동기화 시작`, { product_id: productId })
+    this.logger.info(`가격 동기화 시작 - Product: ${productId}`)
 
     try {
       // 해당 상품의 Amazon 동기화 레코드 조회
       const syncRecords = await this.amazonIntegrationService.getProductSyncStatus(productId)
       
       if (!syncRecords || syncRecords.length === 0) {
-        this.logger.warn(`Amazon 동기화 레코드가 없습니다`, { product_id: productId })
+        this.logger.warn(`Amazon 동기화 레코드가 없습니다 - Product: ${productId}`)
         return []
       }
 
@@ -101,7 +101,7 @@ class PricingSyncService {
       )
 
       if (completedSyncs.length === 0) {
-        this.logger.warn(`완료된 Amazon 동기화가 없습니다`, { product_id: productId })
+        this.logger.warn(`완료된 Amazon 동기화가 없습니다 - Product: ${productId}`)
         return []
       }
 
@@ -115,9 +115,7 @@ class PricingSyncService {
           )
 
           if (!marketplace || !marketplace.is_active) {
-            this.logger.warn(`비활성 마켓플레이스`, { 
-              marketplace_id: syncRecord.amazon_marketplace_id 
-            })
+            this.logger.warn(`비활성 마켓플레이스 - Marketplace: ${syncRecord.amazon_marketplace_id}`)
             continue
           }
 
@@ -127,10 +125,7 @@ class PricingSyncService {
           ) || priceData.find(price => price.currency_code === 'USD') // 기본값
 
           if (!matchingPrice) {
-            this.logger.warn(`가격 정보를 찾을 수 없습니다`, {
-              product_id: productId,
-              marketplace_currency: marketplace.currency_code
-            })
+            this.logger.warn(`가격 정보를 찾을 수 없습니다 - Product: ${productId}, Currency: ${marketplace.currency_code}`)
             continue
           }
 
@@ -198,12 +193,7 @@ class PricingSyncService {
               price_difference: Math.abs(matchingPrice.amount - finalPrice)
             })
 
-            this.logger.info(`가격 동기화 완료`, {
-              sku: syncRecord.amazon_sku,
-              marketplace: marketplace.country_code,
-              price: finalPrice,
-              currency: marketplace.currency_code
-            })
+            this.logger.info(`가격 동기화 완료 - SKU: ${syncRecord.amazon_sku}, Marketplace: ${marketplace.country_code}, Price: ${finalPrice}, Currency: ${marketplace.currency_code}`)
           } else {
             results.push({
               sku: syncRecord.amazon_sku!,
@@ -229,19 +219,13 @@ class PricingSyncService {
             error_message: error.message
           })
 
-          this.logger.error(`가격 동기화 실패`, {
-            sync_record_id: syncRecord.id,
-            error: error.message
-          })
+          this.logger.error(`가격 동기화 실패 - Sync Record: ${syncRecord.id}, Error: ${error.message}`)
         }
       }
 
       return results
     } catch (error) {
-      this.logger.error(`가격 동기화 처리 중 오류`, {
-        product_id: productId,
-        error: error.message
-      })
+      this.logger.error(`가격 동기화 처리 중 오류 - Product: ${productId}, Error: ${error.message}`)
       return []
     }
   }
@@ -255,14 +239,14 @@ class PricingSyncService {
       priceData: MedusaPriceData[]
     }>
   ): Promise<PriceSyncResult[]> {
-    this.logger.info(`배치 가격 동기화 시작`, { count: updates.length })
+    this.logger.info(`배치 가격 동기화 시작 - Count: ${updates.length}`)
 
     const allResults: PriceSyncResult[] = []
     const batches = this.chunkArray(updates, this.config.batch_size)
 
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i]
-      this.logger.info(`배치 ${i + 1}/${batches.length} 처리 중`, { size: batch.length })
+      this.logger.info(`배치 ${i + 1}/${batches.length} 처리 중 - Size: ${batch.length}`)
 
       // 배치 내 동시 처리
       const batchPromises = batch.map(update => 
@@ -275,10 +259,7 @@ class PricingSyncService {
         if (result.status === 'fulfilled') {
           allResults.push(...result.value)
         } else {
-          this.logger.error(`배치 아이템 처리 실패`, {
-            product_id: batch[index].productId,
-            error: result.reason
-          })
+          this.logger.error(`배치 아이템 처리 실패 - Product: ${batch[index].productId}, Error: ${result.reason}`)
         }
       })
 
@@ -288,12 +269,7 @@ class PricingSyncService {
       }
     }
 
-    this.logger.info(`배치 가격 동기화 완료`, {
-      total_updates: updates.length,
-      successful: allResults.filter(r => r.sync_status === 'success').length,
-      failed: allResults.filter(r => r.sync_status === 'failed').length,
-      skipped: allResults.filter(r => r.sync_status === 'skipped').length
-    })
+    this.logger.info(`배치 가격 동기화 완룼 - Total: ${updates.length}, Success: ${allResults.filter(r => r.sync_status === 'success').length}, Failed: ${allResults.filter(r => r.sync_status === 'failed').length}, Skipped: ${allResults.filter(r => r.sync_status === 'skipped').length}`)
 
     return allResults
   }
@@ -317,32 +293,18 @@ class PricingSyncService {
       }
 
       if (!this.currencyRates?.rates[toCurrency]) {
-        this.logger.warn(`환율 정보 없음`, { 
-          from: fromCurrency, 
-          to: toCurrency 
-        })
+        this.logger.warn(`환율 정보 없음 - From: ${fromCurrency}, To: ${toCurrency}`)
         return amount // 변환 실패 시 원래 금액 반환
       }
 
       const rate = this.currencyRates.rates[toCurrency]
       const convertedAmount = amount * rate
 
-      this.logger.debug(`통화 변환`, {
-        amount,
-        from: fromCurrency,
-        to: toCurrency,
-        rate,
-        converted: convertedAmount
-      })
+      this.logger.debug(`통화 변환 - Amount: ${amount}, From: ${fromCurrency}, To: ${toCurrency}, Rate: ${rate}, Converted: ${convertedAmount}`)
 
       return Math.round(convertedAmount * 100) / 100 // 소수점 둘째 자리까지
     } catch (error) {
-      this.logger.error(`통화 변환 실패`, {
-        amount,
-        from: fromCurrency,
-        to: toCurrency,
-        error: error.message
-      })
+      this.logger.error(`통화 변환 실패 - Amount: ${amount}, From: ${fromCurrency}, To: ${toCurrency}, Error: ${error.message}`)
       return amount
     }
   }
@@ -379,12 +341,9 @@ class PricingSyncService {
         }
       }
 
-      this.logger.info(`환율 정보 업데이트 완료`, {
-        base: this.currencyRates.base_currency,
-        currencies: Object.keys(this.currencyRates.rates).length
-      })
+      this.logger.info(`환율 정보 업데이트 완료 - Base: ${this.currencyRates.base_currency}, Currencies: ${Object.keys(this.currencyRates.rates).length}`)
     } catch (error) {
-      this.logger.error(`환율 정보 업데이트 실패`, { error: error.message })
+      this.logger.error(`환율 정보 업데이트 실패: ${error.message}`)
     }
   }
 
@@ -429,7 +388,16 @@ class PricingSyncService {
         record.sync_status === 'completed' && record.amazon_sku
       )
 
-      const comparisons = []
+      const comparisons: Array<{
+        sku: string
+        marketplace: string
+        marketplace_currency: string
+        medusa_price: number
+        amazon_price: number
+        difference: number
+        difference_percentage: number
+        needs_sync: boolean
+      }> = []
 
       for (const syncRecord of completedSyncs) {
         const marketplace = await this.amazonIntegrationService.retrieveAmazonMarketplace(
@@ -473,10 +441,7 @@ class PricingSyncService {
 
       return comparisons
     } catch (error) {
-      this.logger.error(`가격 수준 비교 실패`, {
-        product_id: productId,
-        error: error.message
-      })
+      this.logger.error(`가격 수준 비교 실패 - Product: ${productId}, Error: ${error.message}`)
       return []
     }
   }
@@ -486,14 +451,14 @@ class PricingSyncService {
    */
   updateConfig(newConfig: Partial<PricingSyncConfig>): void {
     this.config = { ...this.config, ...newConfig }
-    this.logger.info(`가격 동기화 설정 업데이트`, this.config)
+    this.logger.info(`가격 동기화 설정 업데이트 - Config: ${JSON.stringify(this.config)}`)
   }
 
   /**
    * 배열을 청크로 분할
    */
   private chunkArray<T>(array: T[], chunkSize: number): T[][] {
-    const chunks = []
+    const chunks: T[][] = []
     for (let i = 0; i < array.length; i += chunkSize) {
       chunks.push(array.slice(i, i + chunkSize))
     }
@@ -525,7 +490,7 @@ class PricingSyncService {
         config: this.config
       }
     } catch (error) {
-      this.logger.error(`가격 동기화 통계 조회 실패`, { error: error.message })
+      this.logger.error(`가격 동기화 통계 조회 실패: ${error.message}`)
       return {
         total_synced_products: 0,
         out_of_sync_count: 0,

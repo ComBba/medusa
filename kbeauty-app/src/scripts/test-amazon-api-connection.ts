@@ -91,7 +91,7 @@ export default async function testAmazonApiConnection({ container }: ExecArgs) {
         timestamp: new Date().toISOString()
       }
 
-      logger.info('✅ 모의 연결 성공:', mockResponse)
+      logger.info(`✅ 모의 연결 성공: ${JSON.stringify(mockResponse, null, 2)}`)
       logger.info('📝 실제 자격 증명을 설정하면 진짜 Amazon API에 연결됩니다.')
       
     } else {
@@ -112,7 +112,7 @@ export default async function testAmazonApiConnection({ container }: ExecArgs) {
         logger.info('📚 상세한 구현은 Amazon SP-API SDK가 필요합니다.')
         
       } catch (error) {
-        logger.error('❌ Amazon SP-API 연결 실패:', error.message)
+        logger.error(`❌ Amazon SP-API 연결 실패: ${error.message}`)
         throw error
       }
     }
@@ -170,10 +170,7 @@ export default async function testAmazonApiConnection({ container }: ExecArgs) {
     }
 
   } catch (error) {
-    logger.error('💥 Amazon SP-API 연결 테스트 실패:', {
-      error: error.message,
-      stack: error.stack
-    })
+    logger.error(`💥 Amazon SP-API 연결 테스트 실패: ${error.message}`)
     throw error
   }
 } 

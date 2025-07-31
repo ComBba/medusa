@@ -67,24 +67,24 @@ class InventorySyncService {
     productId: string,
     inventoryItems: MedusaInventoryItem[]
   ): Promise<SyncResult[]> {
-    this.logger.info(`재고 동기화 시작`, { product_id: productId })
+    this.logger.info(`재고 동기화 시작 - Product: ${productId}`)
 
     try {
       // 해당 상품의 Amazon 동기화 레코드 조회
       const syncRecords = await this.amazonIntegrationService.getProductSyncStatus(productId)
-      
+
       if (!syncRecords || syncRecords.length === 0) {
-        this.logger.warn(`Amazon 동기화 레코드가 없습니다`, { product_id: productId })
+        this.logger.warn(`Amazon 동기화 레코드가 없습니다 - Product: ${productId}`)
         return []
       }
 
       // 완료된 동기화만 처리
-      const completedSyncs = syncRecords.filter(record => 
+      const completedSyncs = syncRecords.filter(record =>
         record.sync_status === 'completed' && record.amazon_sku
       )
 
       if (completedSyncs.length === 0) {
-        this.logger.warn(`완료된 Amazon 동기화가 없습니다`, { product_id: productId })
+        this.logger.warn(`완료된 Amazon 동기화가 없습니다 - Product: ${productId}`)
         return []
       }
 
@@ -98,9 +98,7 @@ class InventorySyncService {
           )
 
           if (!marketplace || !marketplace.is_active) {
-            this.logger.warn(`비활성 마켓플레이스`, { 
-              marketplace_id: syncRecord.amazon_marketplace_id 
-            })
+            this.logger.warn(`비활성 마켓플레이스 - Marketplace: ${syncRecord.amazon_marketplace_id}`)
             continue
           }
 
@@ -141,11 +139,7 @@ class InventorySyncService {
               error_message: result.success ? undefined : result.error
             })
 
-            this.logger.info(`재고 동기화 완료`, {
-              sku: syncRecord.amazon_sku,
-              marketplace: marketplace.country_code,
-              quantity: totalAvailableQuantity
-            })
+            this.logger.info(`재고 동기화 완료 - SKU: ${syncRecord.amazon_sku}, Marketplace: ${marketplace.country_code}, Quantity: ${totalAvailableQuantity}`)
           } else {
             results.push({
               sku: syncRecord.amazon_sku!,
@@ -167,19 +161,13 @@ class InventorySyncService {
             error_message: error.message
           })
 
-          this.logger.error(`재고 동기화 실패`, {
-            sync_record_id: syncRecord.id,
-            error: error.message
-          })
+          this.logger.error(`재고 동기화 실패 - Record: ${syncRecord.id}, Error: ${error.message}`)
         }
       }
 
       return results
     } catch (error) {
-      this.logger.error(`재고 동기화 처리 중 오류`, {
-        product_id: productId,
-        error: error.message
-      })
+      this.logger.error(`재고 동기화 처리 중 오류 - Product: ${productId}, Error: ${error.message}`)
       return []
     }
   }
@@ -193,30 +181,27 @@ class InventorySyncService {
       inventoryItems: MedusaInventoryItem[]
     }>
   ): Promise<SyncResult[]> {
-    this.logger.info(`배치 재고 동기화 시작`, { count: updates.length })
+    this.logger.info(`배치 재고 동기화 시작 - Count: ${updates.length}`)
 
     const allResults: SyncResult[] = []
     const batches = this.chunkArray(updates, this.config.batch_size)
 
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i]
-      this.logger.info(`배치 ${i + 1}/${batches.length} 처리 중`, { size: batch.length })
+      this.logger.info(`배치 ${i + 1}/${batches.length} 처리 중 - Size: ${batch.length}`)
 
       // 배치 내 동시 처리
-      const batchPromises = batch.map(update => 
+      const batchPromises = batch.map(update =>
         this.syncProductInventory(update.productId, update.inventoryItems)
       )
 
       const batchResults = await Promise.allSettled(batchPromises)
-      
+
       batchResults.forEach((result, index) => {
         if (result.status === 'fulfilled') {
           allResults.push(...result.value)
         } else {
-          this.logger.error(`배치 아이템 처리 실패`, {
-            product_id: batch[index].productId,
-            error: result.reason
-          })
+          this.logger.error(`배치 아이템 처리 실패 - Product: ${batch[index].productId}, Error: ${result.reason}`)
         }
       })
 
@@ -226,12 +211,7 @@ class InventorySyncService {
       }
     }
 
-    this.logger.info(`배치 재고 동기화 완료`, {
-      total_updates: updates.length,
-      successful: allResults.filter(r => r.sync_status === 'success').length,
-      failed: allResults.filter(r => r.sync_status === 'failed').length,
-      skipped: allResults.filter(r => r.sync_status === 'skipped').length
-    })
+    this.logger.info(`배치 재고 동기화 완료 - Total: ${updates.length}, Success: ${allResults.filter(r => r.sync_status === 'success').length}, Failed: ${allResults.filter(r => r.sync_status === 'failed').length}, Skipped: ${allResults.filter(r => r.sync_status === 'skipped').length}`)
 
     return allResults
   }
@@ -251,13 +231,20 @@ class InventorySyncService {
   }>> {
     try {
       const syncRecords = await this.amazonIntegrationService.getProductSyncStatus(productId)
-      const completedSyncs = syncRecords.filter(record => 
+      const completedSyncs = syncRecords.filter(record =>
         record.sync_status === 'completed' && record.amazon_sku
       )
 
-      const comparisons = []
+      const comparisons: Array<{
+        sku: string
+        marketplace: string
+        medusa_quantity: number
+        amazon_quantity: number
+        difference: number
+        needs_sync: boolean
+      }> = []
 
-      for (const syncRecord of completedSyncs) {
+      for(const syncRecord of completedSyncs) {
         const marketplace = await this.amazonIntegrationService.retrieveAmazonMarketplace(
           syncRecord.amazon_marketplace_id
         )
@@ -292,119 +279,123 @@ class InventorySyncService {
       }
 
       return comparisons
-    } catch (error) {
-      this.logger.error(`재고 수준 비교 실패`, {
-        product_id: productId,
-        error: error.message
-      })
-      return []
-    }
+  } catch (error) {
+    this.logger.error(`재고 수준 비교 실패 - Product: ${productId}, Error: ${error.message}`)
+    return []
+  }
   }
 
   /**
    * 재고 차이가 있는 상품들을 자동으로 동기화
    */
-  async syncOutOfSyncInventory(): Promise<void> {
-    this.logger.info(`동기화 누락 재고 확인 시작`)
+  async syncOutOfSyncInventory(): Promise < void> {
+  this.logger.info(`동기화 누락 재고 확인 시작`)
 
     try {
-      // 완료된 모든 동기화 레코드 조회
-      const allSyncRecords = await this.amazonIntegrationService.listAmazonProductSyncs({
-        sync_status: 'completed'
-      })
+    // 완료된 모든 동기화 레코드 조회
+    const allSyncRecords = await this.amazonIntegrationService.listAmazonProductSyncs({
+      sync_status: 'completed'
+    })
 
       const groupedByProduct = allSyncRecords.reduce((acc, record) => {
-        if (!acc[record.medusa_product_id]) {
-          acc[record.medusa_product_id] = []
-        }
-        acc[record.medusa_product_id].push(record)
-        return acc
-      }, {} as Record<string, any[]>)
-
-      const outOfSyncProducts = []
-
-      for (const [productId, records] of Object.entries(groupedByProduct)) {
-        const comparisons = await this.compareInventoryLevels(productId)
-        const needsSync = comparisons.some(comp => comp.needs_sync)
-
-        if (needsSync) {
-          outOfSyncProducts.push({
-            productId,
-            comparisons
-          })
-        }
+      if (!acc[record.medusa_product_id]) {
+        acc[record.medusa_product_id] = []
       }
+      acc[record.medusa_product_id].push(record)
+      return acc
+    }, {} as Record<string, any[]>)
 
-      if (outOfSyncProducts.length === 0) {
-        this.logger.info(`동기화가 필요한 재고가 없습니다`)
-        return
-      }
+      const outOfSyncProducts: Array<{
+      productId: string
+      comparisons: Array<{
+        sku: string
+        marketplace: string
+        medusa_quantity: number
+        amazon_quantity: number
+        difference: number
+        needs_sync: boolean
+      }>
+    }> =[]
 
-      this.logger.info(`동기화 필요한 상품 발견`, { count: outOfSyncProducts.length })
+      for(const [productId, records] of Object.entries(groupedByProduct)) {
+  const comparisons = await this.compareInventoryLevels(productId)
+  const needsSync = comparisons.some(comp => comp.needs_sync)
 
-      // 동기화 실행 (실제 구현에서는 inventory service에서 데이터 조회 필요)
-      for (const product of outOfSyncProducts) {
-        // TODO: 실제 재고 데이터 조회 및 동기화
-        this.logger.info(`재고 동기화 필요`, {
-          product_id: product.productId,
-          differences: product.comparisons.filter(c => c.needs_sync)
-        })
-      }
+  if (needsSync) {
+    outOfSyncProducts.push({
+      productId,
+      comparisons
+    })
+  }
+}
+
+if (outOfSyncProducts.length === 0) {
+  this.logger.info(`동기화가 필요한 재고가 없습니다`)
+  return
+}
+
+this.logger.info(`동기화 필요한 상품 발견 - Count: ${outOfSyncProducts.length}`)
+
+// 동기화 실행 (실제 구현에서는 inventory service에서 데이터 조회 필요)
+for (const product of outOfSyncProducts) {
+  // TODO: 실제 재고 데이터 조회 및 동기화
+  this.logger.info(`재고 동기화 필요 - Product: ${product.productId}, Diffs: ${product.comparisons.filter(c => c.needs_sync).length}`)
+}
 
     } catch (error) {
-      this.logger.error(`동기화 누락 재고 확인 실패`, { error: error.message })
-    }
+  this.logger.error(`동기화 누락 재고 확인 실패: ${error.message}`)
+}
   }
 
-  /**
-   * 재고 동기화 설정 업데이트
-   */
-  updateConfig(newConfig: Partial<InventorySyncConfig>): void {
-    this.config = { ...this.config, ...newConfig }
-    this.logger.info(`재고 동기화 설정 업데이트`, this.config)
-  }
+/**
+ * 재고 동기화 설정 업데이트
+ */
+updateConfig(newConfig: Partial<InventorySyncConfig>): void {
+  this.config = { ...this.config, ...newConfig }
+    this.logger.info(`재고 동기화 설정 업데이트 - Config: ${JSON.stringify(this.config)}`)
+}
 
   /**
    * 배열을 청크로 분할
    */
   private chunkArray<T>(array: T[], chunkSize: number): T[][] {
-    const chunks = []
-    for (let i = 0; i < array.length; i += chunkSize) {
-      chunks.push(array.slice(i, i + chunkSize))
-    }
-    return chunks
+  const chunks: T[][] = []
+  for (let i = 0; i < array.length; i += chunkSize) {
+    chunks.push(array.slice(i, i + chunkSize))
   }
+  return chunks
+}
 
   /**
    * 재고 동기화 통계 조회
    */
-  async getInventorySyncStats(): Promise<{
-    total_synced_products: number
+  async getInventorySyncStats(): Promise < {
+  total_synced_products: number
     out_of_sync_count: number
     last_sync_check: Date | null
     config: InventorySyncConfig
-  }> {
-    try {
-      const totalSynced = await this.amazonIntegrationService.listAmazonProductSyncs({
-        sync_status: 'completed'
-      })
+} > {
+  try {
+    const totalSynced = await this.amazonIntegrationService.listAmazonProductSyncs({
+      sync_status: 'completed'
+    })
 
       return {
-        total_synced_products: totalSynced.length,
-        out_of_sync_count: 0, // TODO: 실제 계산 로직
-        last_sync_check: new Date(),
-        config: this.config
-      }
-    } catch (error) {
-      this.logger.error(`재고 동기화 통계 조회 실패`, { error: error.message })
-      return {
-        total_synced_products: 0,
-        out_of_sync_count: 0,
-        last_sync_check: null,
-        config: this.config
-      }
+      total_synced_products: totalSynced.length,
+      out_of_sync_count: 0, // TODO: 실제 계산 로직
+      last_sync_check: new Date(),
+      config: this.config
+    }
+  } catch(error) {
+    this.logger.error(`재고 동기화 통계 조회 실패: ${error.message}`)
+    return {
+      total_synced_products: 0,
+      out_of_sync_count: 0,
+      last_sync_check: null,
+      config: this.config
     }
   }
+}
 }
 
 export default InventorySyncService 

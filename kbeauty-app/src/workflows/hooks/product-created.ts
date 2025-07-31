@@ -25,15 +25,11 @@ createProductsWorkflow.hooks.productsCreated(
           input: {
             product,
             // additional_data에서 특정 마켓플레이스 ID가 지정된 경우 사용
-            marketplace_ids: additional_data?.amazon_marketplace_ids
+            marketplace_ids: (additional_data?.amazon_marketplace_ids as string[]) || undefined
           }
         })
         
-        logger.info(`✅ Amazon 동기화 완료: ${product.title}`, {
-          product_id: result.product_id,
-          total_marketplaces: result.total_marketplaces,
-          sync_results: result.sync_results
-        })
+        logger.info(`✅ Amazon 동기화 완료: ${product.title} - Product: ${result.product_id}, Total: ${result.total_marketplaces}`)
         
         // 성공한 동기화 개수 집계
         const successfulSyncs = result.sync_results?.filter(r => r.success).length || 0
@@ -49,19 +45,13 @@ createProductsWorkflow.hooks.productsCreated(
           // 실패한 동기화에 대한 상세 로그
           result.sync_results?.forEach(syncResult => {
             if (!syncResult.success) {
-              logger.error(`Amazon 동기화 실패 - Marketplace: ${syncResult.marketplace_id}`, {
-                error: syncResult.error
-              })
+              logger.error(`Amazon 동기화 실패 - Marketplace: ${syncResult.marketplace_id}, Error: ${syncResult.error?.message || 'Unknown error'}`)
             }
           })
         }
         
       } catch (error) {
-        logger.error(`❌ Amazon 동기화 중 오류 발생: ${product.title}`, {
-          product_id: product.id,
-          error: error.message,
-          stack: error.stack
-        })
+        logger.error(`❌ Amazon 동기화 중 오류 발생: ${product.title} - Product: ${product.id}, Error: ${error.message}`)
         
         // 워크플로우 실행 실패는 상품 생성을 중단시키지 않음
         // 대신 로그만 남기고 계속 진행

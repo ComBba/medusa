@@ -78,10 +78,7 @@ export class AmazonIntegrationTester {
       this.logTestSummary(testSuites)
 
     } catch (error) {
-      this.logger.error('🚨 테스트 실행 중 치명적 오류', {
-        error: error.message,
-        stack: error.stack
-      })
+      this.logger.error(`🚨 테스트 실행 중 치명적 오류: ${error.message}`)
     }
 
     return testSuites
@@ -525,7 +522,7 @@ export class AmazonIntegrationTester {
       const result = await testFunction()
       const duration = Date.now() - startTime
       
-      this.logger.debug(`✅ ${name} 통과`, { duration, result })
+      this.logger.debug(`✅ ${name} 통과 - Duration: ${duration}ms`)
       
       return {
         name,
@@ -536,10 +533,7 @@ export class AmazonIntegrationTester {
     } catch (error) {
       const duration = Date.now() - startTime
       
-      this.logger.error(`❌ ${name} 실패`, { 
-        duration, 
-        error: error.message 
-      })
+      this.logger.error(`❌ ${name} 실패 - Duration: ${duration}ms, Error: ${error.message}`)
       
       return {
         name,
@@ -580,31 +574,13 @@ export class AmazonIntegrationTester {
     const totalPassed = testSuites.reduce((sum, suite) => sum + suite.summary.passed, 0)
     const totalDuration = testSuites.reduce((sum, suite) => sum + suite.totalDuration, 0)
 
-    this.logger.info(`🏁 Amazon Integration 테스트 완료`, {
-      overall_result: overallPassed ? 'PASSED' : 'FAILED',
-      total_tests: totalTests,
-      passed_tests: totalPassed,
-      failed_tests: totalTests - totalPassed,
-      total_duration: `${totalDuration}ms`,
-      test_suites: testSuites.map(suite => ({
-        name: suite.name,
-        passed: suite.passed,
-        tests: `${suite.summary.passed}/${suite.summary.total}`,
-        duration: `${suite.totalDuration}ms`
-      }))
-    })
+    this.logger.info(`🏁 Amazon Integration 테스트 완료 - Result: ${overallPassed ? 'PASSED' : 'FAILED'}, Tests: ${totalPassed}/${totalTests}, Duration: ${totalDuration}ms, Suites: ${testSuites.map(suite => `${suite.name}(${suite.summary.passed}/${suite.summary.total})`).join(', ')}`)
 
     // 실패한 테스트 상세 로깅
     testSuites.forEach(suite => {
       const failedTests = suite.tests.filter(test => !test.passed)
       if (failedTests.length > 0) {
-        this.logger.error(`❌ ${suite.name} 실패한 테스트들`, {
-          failed_tests: failedTests.map(test => ({
-            name: test.name,
-            error: test.error,
-            duration: test.duration
-          }))
-        })
+        this.logger.error(`❌ ${suite.name} 실패한 테스트들 - Count: ${failedTests.length}, Tests: ${failedTests.map(test => test.name).join(', ')}`)
       }
     })
   }

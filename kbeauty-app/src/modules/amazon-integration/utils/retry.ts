@@ -58,20 +58,11 @@ export class RetryManager {
         const err = error instanceof Error ? error : new Error(String(error))
         errors.push(err)
         
-        logger?.debug(`재시도 ${attempt}/${config.maxAttempts} 실패`, {
-          error: err.message,
-          attempt,
-          shouldRetry: config.shouldRetry?.(err, attempt) ?? false
-        })
+        logger?.debug(`재시도 ${attempt}/${config.maxAttempts} 실패 - Error: ${err.message}, ShouldRetry: ${config.shouldRetry?.(err, attempt) ?? false}`)
 
         // 마지막 시도이거나 재시도 조건을 만족하지 않으면 에러 throw
         if (attempt === config.maxAttempts || !config.shouldRetry?.(err, attempt)) {
-          logger?.error(`재시도 최종 실패`, {
-            attempts: attempt,
-            totalDuration: Date.now() - startTime,
-            lastError: err.message,
-            allErrors: errors.map(e => e.message)
-          })
+          logger?.error(`재시도 최종 실패 - Attempts: ${attempt}, Duration: ${Date.now() - startTime}ms, Error: ${err.message}`)
           throw err
         }
 
@@ -84,11 +75,7 @@ export class RetryManager {
         // 재시도 콜백 호출
         config.onRetry?.(err, attempt, delay)
         
-        logger?.warn(`${delay}ms 후 재시도 예정`, {
-          attempt,
-          delay,
-          error: err.message
-        })
+        logger?.warn(`${delay}ms 후 재시도 예정 - Attempt: ${attempt}, Error: ${err.message}`)
 
         // 지연 후 재시도
         await RetryManager.delay(delay)
@@ -192,10 +179,7 @@ export class CircuitBreaker {
     
     if (this.failures >= this.failureThreshold) {
       this.state = 'OPEN'
-      this.logger?.error(`Circuit breaker OPEN됨`, {
-        failures: this.failures,
-        threshold: this.failureThreshold
-      })
+      this.logger?.error(`Circuit breaker OPEN됨 - Failures: ${this.failures}, Threshold: ${this.failureThreshold}`)
     }
   }
 
@@ -234,10 +218,7 @@ export class RateLimiter {
       this.queue.push(async () => {
         try {
           this.running++
-          this.logger?.debug(`요청 실행 시작`, {
-            running: this.running,
-            queued: this.queue.length
-          })
+          this.logger?.debug(`요청 실행 시작 - Running: ${this.running}, Queued: ${this.queue.length}`)
           
           const result = await operation()
           resolve(result)

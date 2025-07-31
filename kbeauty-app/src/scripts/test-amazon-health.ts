@@ -64,7 +64,7 @@ export default async function testAmazonHealth({ container }: ExecArgs) {
     }
 
     let configuredCount = 0
-    let missingConfig = []
+    let missingConfig: string[] = []
 
     Object.entries(envVars).forEach(([key, value]) => {
       if (value && value !== 'your-' + key.toLowerCase().replace(/_/g, '-')) {
@@ -126,10 +126,7 @@ export default async function testAmazonHealth({ container }: ExecArgs) {
     }
 
   } catch (error) {
-    logger.error('💥 Amazon 통합 시스템 헬스체크 실패:', {
-      error: error.message,
-      stack: error.stack
-    })
+    logger.error(`💥 Amazon 통합 시스템 헬스체크 실패: ${error.message}`)
     throw error
   }
 } 

@@ -44,22 +44,12 @@ export default async function inventoryChangedSubscriber({
     amazonService
   })
 
-  logger.info(`🔄 재고 변경 이벤트 수신`, {
-    event_name: event.name,
-    inventory_id: event.data.id,
-    sku: event.data.sku,
-    product_id: event.data.product_id,
-    stocked_quantity: event.data.stocked_quantity,
-    reserved_quantity: event.data.reserved_quantity
-  })
+  logger.info(`🔄 재고 변경 이벤트 수신 - Event: ${event.name}, Inventory: ${event.data.id}, SKU: ${event.data.sku}, Product: ${event.data.product_id}, Stocked: ${event.data.stocked_quantity}, Reserved: ${event.data.reserved_quantity}`)
 
   try {
     // 상품 ID가 있는 경우만 처리 (상품과 연관된 재고만)
     if (!event.data.product_id) {
-      logger.debug(`상품 ID가 없는 재고 변경 이벤트 스킵`, {
-        inventory_id: event.data.id,
-        sku: event.data.sku
-      })
+      logger.debug(`상품 ID가 없는 재고 변경 이벤트 스킵 - Inventory: ${event.data.id}, SKU: ${event.data.sku}`)
       return
     }
 
@@ -67,10 +57,7 @@ export default async function inventoryChangedSubscriber({
     const syncRecords = await amazonIntegrationService.getProductSyncStatus(event.data.product_id)
     
     if (!syncRecords || syncRecords.length === 0) {
-      logger.debug(`Amazon 동기화되지 않은 상품의 재고 변경`, {
-        product_id: event.data.product_id,
-        sku: event.data.sku
-      })
+      logger.debug(`Amazon 동기화되지 않은 상품의 재고 변경 - Product: ${event.data.product_id}, SKU: ${event.data.sku}`)
       return
     }
 
@@ -80,10 +67,7 @@ export default async function inventoryChangedSubscriber({
     )
 
     if (completedSyncs.length === 0) {
-      logger.debug(`완료된 Amazon 동기화가 없는 상품의 재고 변경`, {
-        product_id: event.data.product_id,
-        sku: event.data.sku
-      })
+      logger.debug(`완료된 Amazon 동기화가 없는 상품의 재고 변경 - Product: ${event.data.product_id}, SKU: ${event.data.sku}`)
       return
     }
 
@@ -99,23 +83,11 @@ export default async function inventoryChangedSubscriber({
 
     // 변경량이 임계값보다 작으면 스킵
     if (quantityDifference < 1) {
-      logger.debug(`재고 변경량이 임계값 미만`, {
-        product_id: event.data.product_id,
-        difference: quantityDifference,
-        previous_available: previousAvailable,
-        current_available: currentAvailable
-      })
+      logger.debug(`재고 변경량이 임계값 미만 - Product: ${event.data.product_id}, Difference: ${quantityDifference}, Previous: ${previousAvailable}, Current: ${currentAvailable}`)
       return
     }
 
-    logger.info(`📦 Amazon 재고 동기화 시작`, {
-      product_id: event.data.product_id,
-      sku: event.data.sku,
-      previous_available: previousAvailable,
-      current_available: currentAvailable,
-      difference: quantityDifference,
-      sync_records: completedSyncs.length
-    })
+    logger.info(`📦 Amazon 재고 동기화 시작 - Product: ${event.data.product_id}, SKU: ${event.data.sku}, Previous: ${previousAvailable}, Current: ${currentAvailable}, Difference: ${quantityDifference}, Records: ${completedSyncs.length}`)
 
     // 재고 아이템 데이터 구성
     const inventoryItems: MedusaInventoryItem[] = [{
@@ -138,44 +110,17 @@ export default async function inventoryChangedSubscriber({
     const failedSyncs = syncResults.filter(r => r.sync_status === 'failed')
 
     if (successfulSyncs.length > 0) {
-      logger.info(`✅ Amazon 재고 동기화 성공`, {
-        product_id: event.data.product_id,
-        successful_marketplaces: successfulSyncs.length,
-        failed_marketplaces: failedSyncs.length,
-        results: successfulSyncs.map(r => ({
-          sku: r.sku,
-          marketplace: r.marketplace_id,
-          quantity: r.amazon_quantity
-        }))
-      })
+      logger.info(`✅ Amazon 재고 동기화 성공 - Product: ${event.data.product_id}, Success: ${successfulSyncs.length}, Failed: ${failedSyncs.length}, SKUs: ${successfulSyncs.map(r => r.sku).join(', ')}`)
     }
 
     if (failedSyncs.length > 0) {
-      logger.error(`❌ Amazon 재고 동기화 일부 실패`, {
-        product_id: event.data.product_id,
-        failed_count: failedSyncs.length,
-        errors: failedSyncs.map(r => ({
-          sku: r.sku,
-          marketplace: r.marketplace_id,
-          error: r.error_message
-        }))
-      })
+      logger.error(`❌ Amazon 재고 동기화 일부 실패 - Product: ${event.data.product_id}, Failed: ${failedSyncs.length}, Errors: ${failedSyncs.map(r => `${r.sku}: ${r.error_message}`).join(', ')}`)
     }
 
-    logger.info(`🏁 재고 변경 이벤트 처리 완료`, {
-      product_id: event.data.product_id,
-      total_syncs: syncResults.length,
-      successful: successfulSyncs.length,
-      failed: failedSyncs.length
-    })
+    logger.info(`🏁 재고 변경 이벤트 처리 완료 - Product: ${event.data.product_id}, Total: ${syncResults.length}, Success: ${successfulSyncs.length}, Failed: ${failedSyncs.length}`)
 
   } catch (error) {
-    logger.error(`💥 재고 변경 이벤트 처리 중 오류`, {
-      product_id: event.data.product_id,
-      inventory_id: event.data.id,
-      error: error.message,
-      stack: error.stack
-    })
+    logger.error(`💥 재고 변경 이벤트 처리 중 오류 - Product: ${event.data.product_id}, Inventory: ${event.data.id}, Error: ${error.message}`)
   }
 }
 

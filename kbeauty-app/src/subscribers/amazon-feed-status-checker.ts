@@ -34,9 +34,15 @@ export default async function amazonFeedStatusChecker({
       syncRecord.amazon_marketplace_id
     )
     
+    // seller_id가 없으면 처리 불가
+    if (!marketplace.seller_id) {
+      console.error(`❌ Seller ID가 설정되지 않은 마켓플레이스: ${marketplace.name}`)
+      return
+    }
+
     // Amazon SP-API 클라이언트 생성
     const apiClient = new AmazonSPAPIClient({
-      region: marketplace.region,
+      region: marketplace.region as any, // TODO: marketplace.region을 AmazonRegion 타입으로 변경 필요
       credentials: {
         seller_id: marketplace.seller_id,
         marketplace_id: marketplace.marketplace_id,
@@ -63,7 +69,8 @@ export default async function amazonFeedStatusChecker({
         if (feedData.processingReport?.summary?.messagesProcessed > 0 && 
             feedData.processingReport?.summary?.messagesWithError === 0) {
           // 성공
-          await amazonService.updateAmazonProductSyncs([sync_record_id], {
+          await amazonService.updateAmazonProductSyncs({
+            id: sync_record_id,
             sync_status: "completed",
             processing_status: processingStatus,
             last_sync_at: new Date(),
@@ -72,7 +79,8 @@ export default async function amazonFeedStatusChecker({
           console.log(`✅ Amazon Feed 처리 완료: ${feed_submission_id}`)
         } else {
           // 에러 발생
-          await amazonService.updateAmazonProductSyncs([sync_record_id], {
+          await amazonService.updateAmazonProductSyncs({
+            id: sync_record_id,
             sync_status: "failed",
             processing_status: processingStatus,
             error_message: "Feed processing completed with errors",
@@ -84,7 +92,8 @@ export default async function amazonFeedStatusChecker({
         break
         
       case 'CANCELLED':
-        await amazonService.updateAmazonProductSyncs([sync_record_id], {
+        await amazonService.updateAmazonProductSyncs({
+          id: sync_record_id,
           sync_status: "cancelled",
           processing_status: processingStatus,
         })
@@ -93,7 +102,8 @@ export default async function amazonFeedStatusChecker({
         break
         
       case 'FATAL':
-        await amazonService.updateAmazonProductSyncs([sync_record_id], {
+        await amazonService.updateAmazonProductSyncs({
+          id: sync_record_id,
           sync_status: "failed", 
           processing_status: processingStatus,
           error_message: "Feed processing failed with fatal error",
@@ -107,7 +117,8 @@ export default async function amazonFeedStatusChecker({
       case 'IN_QUEUE':
       default:
         // 아직 처리 중 - 상태만 업데이트
-        await amazonService.updateAmazonProductSyncs([sync_record_id], {
+        await amazonService.updateAmazonProductSyncs({
+          id: sync_record_id,
           processing_status: processingStatus,
         })
         
@@ -124,7 +135,8 @@ export default async function amazonFeedStatusChecker({
     
     if (newAttempts >= (syncRecord?.max_attempts || 3)) {
       // 최대 재시도 횟수 초과 시 실패 처리
-      await amazonService.updateAmazonProductSyncs([sync_record_id], {
+      await amazonService.updateAmazonProductSyncs({
+        id: sync_record_id,
         sync_status: "failed",
         sync_attempts: newAttempts,
         error_message: error.message,
@@ -132,7 +144,8 @@ export default async function amazonFeedStatusChecker({
       })
     } else {
       // 재시도 가능 시 시도 횟수만 증가
-      await amazonService.updateAmazonProductSyncs([sync_record_id], {
+      await amazonService.updateAmazonProductSyncs({
+        id: sync_record_id,
         sync_attempts: newAttempts,
       })
     }

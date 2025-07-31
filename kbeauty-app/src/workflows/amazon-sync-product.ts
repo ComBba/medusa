@@ -37,13 +37,24 @@ const createAmazonSyncRecordStep = createStep(
       
     if (targetMarketplaces.length === 0) {
       return new StepResponse(
-        { message: "No active marketplaces found" }, 
+        { 
+          syncRecords: [],
+          marketplaces: [],
+          product,
+          message: "No active marketplaces found"
+        }, 
         null
       )
     }
 
     // 각 마켓플레이스별로 동기화 레코드 생성
-    const syncRecords = []
+    const syncRecords: Array<{
+      id: string
+      medusa_product_id: string
+      amazon_marketplace_id: string
+      sync_status: string
+      sync_attempts: number
+    }> = []
     
     for (const marketplace of targetMarketplaces) {
       const syncRecord = await amazonService.createAmazonProductSyncs({
@@ -93,11 +104,18 @@ const submitToAmazonStep = createStep(
     syncRecords: any[]
     marketplaces: any[]
     product: ProductDTO
+    message?: string
   }, { container }) => {
     
     const amazonService: AmazonIntegrationModuleService = container.resolve(AMAZON_INTEGRATION_MODULE)
     
-    const results = []
+    const results: Array<{
+      marketplace_id: string
+      success: boolean
+      sku?: string
+      feed_id?: string
+      error?: { code: string; message: string }
+    }> = []
     
     for (let i = 0; i < syncRecords.length; i++) {
       const syncRecord = syncRecords[i]
@@ -105,7 +123,8 @@ const submitToAmazonStep = createStep(
       
       try {
         // 동기화 상태를 'processing'으로 업데이트
-        await amazonService.updateAmazonProductSyncs([syncRecord.id], {
+        await amazonService.updateAmazonProductSyncs({
+          id: syncRecord.id,
           sync_status: "processing",
           sync_attempts: syncRecord.sync_attempts + 1,
         })
@@ -132,7 +151,8 @@ const submitToAmazonStep = createStep(
         
         if (submitResult.success) {
           // 성공 시 동기화 레코드 업데이트
-          await amazonService.updateAmazonProductSyncs([syncRecord.id], {
+          await amazonService.updateAmazonProductSyncs({
+            id: syncRecord.id,
             sync_status: "completed",
             amazon_sku: submitResult.sku,
             feed_submission_id: submitResult.feed_submission_id,
@@ -149,7 +169,8 @@ const submitToAmazonStep = createStep(
           })
         } else {
           // 실패 시 에러 정보 저장
-          await amazonService.updateAmazonProductSyncs([syncRecord.id], {
+          await amazonService.updateAmazonProductSyncs({
+            id: syncRecord.id,
             sync_status: "failed",
             error_message: submitResult.error?.message,
             error_code: submitResult.error?.code,
@@ -164,7 +185,8 @@ const submitToAmazonStep = createStep(
         
       } catch (error) {
         // 예외 발생 시 에러 처리
-        await amazonService.updateAmazonProductSyncs([syncRecord.id], {
+        await amazonService.updateAmazonProductSyncs({
+          id: syncRecord.id,
           sync_status: "failed",
           error_message: error.message,
           error_code: "UNEXPECTED_ERROR",
@@ -193,19 +215,15 @@ export const amazonSyncProductWorkflow = createWorkflow(
   (input: AmazonSyncProductWorkflowInput) => {
     
     // 1단계: 동기화 레코드 생성
-    const { syncRecords, marketplaces, product } = createAmazonSyncRecordStep(input)
+    const syncRecordStep = createAmazonSyncRecordStep(input)
     
     // 2단계: Amazon에 상품 제출
-    const submitResults = submitToAmazonStep({
-      syncRecords,
-      marketplaces, 
-      product
-    })
+    const submitResults = submitToAmazonStep(syncRecordStep)
 
     return new WorkflowResponse({
       product_id: input.product.id,
       sync_results: submitResults,
-      total_marketplaces: marketplaces.length || 0,
+      total_marketplaces: 0, // TODO: workflow data에서 marketplaces 길이 가져오기
     })
   }
 )

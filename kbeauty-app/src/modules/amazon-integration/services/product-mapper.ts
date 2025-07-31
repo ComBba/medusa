@@ -150,7 +150,7 @@ export class ProductMapperService {
     
     // 첫 번째 variant의 가격 사용
     const firstVariant = variants[0]
-    const prices = firstVariant.prices || []
+    const prices = (firstVariant as any).prices || []
     
     // 해당 통화의 가격 찾기
     const targetPrice = prices.find(price => 
@@ -282,8 +282,8 @@ export class ProductMapperService {
     
     for (const variant of variants) {
       // 재고 정보가 있으면 합산
-      if (variant.inventory_quantity) {
-        totalQuantity += variant.inventory_quantity
+      if ((variant as any).inventory_quantity) {
+        totalQuantity += (variant as any).inventory_quantity
       }
     }
     
