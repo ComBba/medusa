@@ -64,7 +64,7 @@ kstart-all
 ```
 📦 kbeauty.market
 ├── 🌐 프론트엔드 (Next.js)     → http://kbeauty.market:10004
-├── 🔧 백엔드 API (Medusa)      → http://api.kbeauty.market:10000
+├── 🔧 백엔드 API (Medusa)      → http://api.kbeauty.market
 ├── 👨‍💼 관리자 패널               → http://admin.kbeauty.market:10001
 ├── 🗄️ PostgreSQL              → localhost:10002
 ├── 🚀 Redis                    → localhost:10003
@@ -311,7 +311,7 @@ STORE_CORS=http://kbeauty.market:10004
 
 - **[📘 상세 가이드](README.kbeauty.md)**: 완전한 개발 가이드
 - **[📖 Medusa 문서](https://docs.medusajs.com)**: 공식 Medusa 문서
-- **[🛠️ API 참조](http://api.kbeauty.market:10000/docs)**: API 문서
+- **[🛠️ API 참조](http://api.kbeauty.market/docs)**: API 문서
 
 ## 🤝 기여하기
 

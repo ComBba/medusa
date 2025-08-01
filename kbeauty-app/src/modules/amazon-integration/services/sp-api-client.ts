@@ -135,6 +135,68 @@ export class AmazonSPAPIClient {
   }
 
   /**
+   * 재고 정보를 Amazon에 업데이트 (Feed API 사용)
+   */
+  async submitInventoryFeed(inventoryData: any[]): Promise<AmazonSyncResult> {
+    try {
+      // XML 피드 생성
+      const feedContent = this.generateInventoryFeedXML(inventoryData)
+      
+      // Feed 제출
+      const response = await this.client.post('/feeds/2021-06-30/feeds', {
+        feedType: 'POST_INVENTORY_AVAILABILITY_DATA',
+        marketplaceIds: [this.credentials.marketplace_id],
+        inputFeedDocumentId: await this.uploadFeedDocument(feedContent)
+      })
+
+      return {
+        success: true,
+        feed_submission_id: response.data.feedId,
+        sku: inventoryData[0]?.sku
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'INVENTORY_FEED_SUBMISSION_ERROR',
+          message: error.message
+        }
+      }
+    }
+  }
+
+  /**
+   * 가격 정보를 Amazon에 업데이트 (Feed API 사용)
+   */
+  async submitPriceFeed(priceData: any[]): Promise<AmazonSyncResult> {
+    try {
+      // XML 피드 생성
+      const feedContent = this.generatePriceFeedXML(priceData)
+      
+      // Feed 제출
+      const response = await this.client.post('/feeds/2021-06-30/feeds', {
+        feedType: 'POST_PRODUCT_PRICING_DATA',
+        marketplaceIds: [this.credentials.marketplace_id],
+        inputFeedDocumentId: await this.uploadFeedDocument(feedContent)
+      })
+
+      return {
+        success: true,
+        feed_submission_id: response.data.feedId,
+        sku: priceData[0]?.sku
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'PRICE_FEED_SUBMISSION_ERROR',
+          message: error.message
+        }
+      }
+    }
+  }
+
+  /**
    * Feed 상태 확인
    */
   async getFeedStatus(feedId: string): Promise<AmazonAPIResponse> {
@@ -216,6 +278,67 @@ export class AmazonSPAPIClient {
         <ItemType>${product.product_type}</ItemType>
       </DescriptionData>
     </Product>
+  </Message>
+  `).join('')}
+</AmazonEnvelope>`
+
+    return xmlContent
+  }
+
+  /**
+   * 재고 피드 XML 생성
+   */
+  private generateInventoryFeedXML(inventoryData: any[]): string {
+    const xmlContent = `<?xml version="1.0" encoding="utf-8"?>
+<AmazonEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="amzn-envelope.xsd">
+  <Header>
+    <DocumentVersion>1.01</DocumentVersion>
+    <MerchantIdentifier>${this.credentials.seller_id}</MerchantIdentifier>
+  </Header>
+  <MessageType>Inventory</MessageType>
+  <PurgeAndReplace>false</PurgeAndReplace>
+  ${inventoryData.map((inventory, index) => `
+  <Message>
+    <MessageID>${index + 1}</MessageID>
+    <Inventory>
+      <SKU>${inventory.sku}</SKU>
+      <Quantity>${inventory.quantity}</Quantity>
+      <FulfillmentLatency>${inventory.handling_time}</FulfillmentLatency>
+      ${inventory.restock_date ? `<RestockDate>${inventory.restock_date}</RestockDate>` : ''}
+    </Inventory>
+  </Message>
+  `).join('')}
+</AmazonEnvelope>`
+
+    return xmlContent
+  }
+
+  /**
+   * 가격 피드 XML 생성
+   */
+  private generatePriceFeedXML(priceData: any[]): string {
+    const xmlContent = `<?xml version="1.0" encoding="utf-8"?>
+<AmazonEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="amzn-envelope.xsd">
+  <Header>
+    <DocumentVersion>1.01</DocumentVersion>
+    <MerchantIdentifier>${this.credentials.seller_id}</MerchantIdentifier>
+  </Header>
+  <MessageType>Price</MessageType>
+  <PurgeAndReplace>false</PurgeAndReplace>
+  ${priceData.map((price, index) => `
+  <Message>
+    <MessageID>${index + 1}</MessageID>
+    <Price>
+      <SKU>${price.sku}</SKU>
+      <StandardPrice currency="${price.currency}">${price.standard_price}</StandardPrice>
+      ${price.sale_price ? `
+      <Sale>
+        <StartDate>${price.sale_start_date}</StartDate>
+        <EndDate>${price.sale_end_date}</EndDate>
+        <SalePrice currency="${price.currency}">${price.sale_price}</SalePrice>
+      </Sale>` : ''}
+      ${price.business_price ? `<BusinessPrice currency="${price.currency}">${price.business_price}</BusinessPrice>` : ''}
+    </Price>
   </Message>
   `).join('')}
 </AmazonEnvelope>`

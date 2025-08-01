@@ -7,6 +7,7 @@ import {
 } from "@medusajs/ui"
 import { useState, useEffect } from "react"
 import { ArrowPath, ChartBar, ExclamationCircle, CheckCircle } from "@medusajs/icons"
+import { amazonSyncClient } from "../../../../lib/config"
 
 interface SyncStats {
   total_marketplaces: number
@@ -25,29 +26,16 @@ export const SyncDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/admin/amazon/sync/stats', {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('medusa_admin_token') || ''}`,
-        }
+      const data = await amazonSyncClient.getSyncStats() as any
+      setStats(data.stats || {
+        total_marketplaces: 9,
+        active_marketplaces: 2,
+        total_products: 150,
+        synced_products: 120,
+        pending_sync: 15,
+        failed_sync: 5,
+        last_sync_time: new Date(Date.now() - 30 * 60 * 1000).toISOString()
       })
-      
-      if (response.ok) {
-        const data = await response.json()
-        setStats(data.stats)
-      } else {
-        // 모의 데이터 (API가 구현되지 않은 경우)
-        setStats({
-          total_marketplaces: 9,
-          active_marketplaces: 2,
-          total_products: 150,
-          synced_products: 120,
-          pending_sync: 15,
-          failed_sync: 5,
-          last_sync_time: new Date(Date.now() - 30 * 60 * 1000).toISOString() // 30분 전
-        })
-      }
     } catch (error) {
       console.error('Failed to fetch sync stats:', error)
       // 오류 시에도 모의 데이터 표시

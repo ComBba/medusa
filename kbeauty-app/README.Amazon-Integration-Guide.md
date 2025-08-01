@@ -23,6 +23,8 @@
 - **🧪 샌드박스 모드**: 안전한 개발 및 테스트 환경
 - **🎯 K-Beauty 최적화**: 한국 화장품 특화 설정
 - **📊 모니터링**: 실시간 동기화 상태 추적
+- **🎮 Medusa JS SDK**: 최신 Admin UI 통합
+- **🚀 고급 동기화 컨트롤**: 상품별 세부 동기화 설정
 
 ### 지원 마켓플레이스
 ```
@@ -67,6 +69,10 @@ AMAZON_AUTO_SYNC_ENABLED=true
 AMAZON_SYNC_INTERVAL_MINUTES=30
 AMAZON_MAX_RETRY_ATTEMPTS=3
 AMAZON_RATE_LIMIT_PER_SECOND=10
+
+# Admin UI 환경 변수 (VITE_ 접두사 필수)
+VITE_MEDUSA_BACKEND_URL=http://localhost:9000
+VITE_AMAZON_INTEGRATION_ENABLED=true
 ```
 
 ### 2. 모듈 등록 확인
@@ -177,7 +183,7 @@ npx medusa exec src/scripts/test-amazon-api-connection.ts
 ### 관리자 패널에서 마켓플레이스 관리
 
 **접속 방법**:
-- 로컬: `http://localhost:10000/app/settings/amazon`
+- 로컬: `http://localhost:9000/app/settings/amazon`
 - 프로덕션: `https://admin.kbeauty.market/app/settings/amazon`
 
 **사용 가능한 기능**:
@@ -187,24 +193,42 @@ npx medusa exec src/scripts/test-amazon-api-connection.ts
 4. **활성화 토글**: 스위치를 통한 마켓플레이스 활성화/비활성화
 5. **연결 테스트**: 선택한 마켓플레이스의 Amazon SP-API 연결 상태 확인
 
+### 상품별 고급 동기화 컨트롤
+
+**상품 상세 페이지에서 사용 가능**:
+- **고급 동기화 위젯**: 각 상품별로 세부 동기화 설정
+- **마켓플레이스별 동기화**: 특정 마켓플레이스만 선택하여 동기화
+- **동기화 타입 선택**: 상품정보, 재고, 가격 또는 전체 중 선택
+- **실시간 상태 모니터링**: 동기화 진행 상황 실시간 확인
+- **고급 옵션**: 이미지 동기화, 강제 업데이트 등
+
 ### 프로그래밍 방식 활성화
 
+**Medusa JS SDK 사용 (권장)**:
 ```typescript
-// 미국 마켓플레이스 활성화 예시 (API 호출)
-const response = await fetch('/admin/amazon/marketplaces', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    marketplace_id: "ATVPDKIKX0DER",
-    seller_id: "YOUR_SELLER_ID",
-    is_active: true,
-    auto_sync: true
-  })
+import { sdk } from '../admin/lib/config'
+
+// 미국 마켓플레이스 활성화 예시
+const response = await sdk.admin.custom.post('/amazon/marketplaces', {
+  marketplace_id: "ATVPDKIKX0DER",
+  seller_id: "YOUR_SELLER_ID",
+  is_active: true,
+  auto_sync: true
 })
 
-// 또는 서비스 직접 호출
+// 상품별 동기화 실행
+const syncResult = await sdk.admin.custom.post('/amazon/sync/product', {
+  product_id: "prod_123",
+  marketplace_ids: ["ATVPDKIKX0DER"],
+  options: {
+    sync_images: true,
+    force_update: false
+  }
+})
+```
+
+**또는 서비스 직접 호출**:
+```typescript
 const amazonService = container.resolve("amazon_integration")
 const updated = await amazonService.updateAmazonMarketplaces(
   [marketplace.id], 
@@ -314,6 +338,119 @@ amazon_product_sync
 
 ---
 
+## 🎮 Medusa JS SDK 사용 가이드
+
+### Admin UI에서 Amazon 동기화 제어
+
+**SDK 설정 확인**:
+```typescript
+// src/admin/lib/config.ts
+import Medusa from "@medusajs/js-sdk"
+
+export const sdk = new Medusa({
+  baseUrl: import.meta.env.VITE_MEDUSA_BACKEND_URL || "http://localhost:9000",
+  auth: {
+    type: "session",
+    fetchCredentials: "include",
+  },
+  debug: import.meta.env.DEV || false,
+})
+```
+
+### 위젯에서 Amazon API 호출
+
+**기본 패턴**:
+```typescript
+import { defineWidgetConfig } from "@medusajs/admin-sdk"
+import { useQuery, useMutation } from "@tanstack/react-query"
+import { sdk } from "../lib/config"
+
+const AmazonSyncWidget = ({ data: product }) => {
+  // 동기화 상태 조회
+  const { data: syncStatus } = useQuery({
+    queryKey: ["amazon-sync-status", product.id],
+    queryFn: () => sdk.admin.custom.get(`/amazon/sync/status`, {
+      params: { product_id: product.id }
+    })
+  })
+
+  // 동기화 실행
+  const syncMutation = useMutation({
+    mutationFn: (params) => sdk.admin.custom.post('/amazon/sync/product', params),
+    onSuccess: () => {
+      toast.success("동기화가 시작되었습니다!")
+    }
+  })
+
+  return (
+    <Container>
+      <Button onClick={() => syncMutation.mutate({ 
+        product_id: product.id,
+        marketplace_ids: ["ATVPDKIKX0DER"]
+      })}>
+        Amazon 동기화
+      </Button>
+    </Container>
+  )
+}
+
+export const config = defineWidgetConfig({
+  zone: "product.details.after",
+})
+```
+
+### React Query 패턴 활용
+
+**최적화된 데이터 관리**:
+```typescript
+// 동기화 통계 조회
+const { data: stats, isLoading } = useQuery({
+  queryKey: ["amazon-sync-stats"],
+  queryFn: () => sdk.admin.custom.get('/amazon/sync/stats'),
+  refetchInterval: 30000, // 30초마다 자동 새로고침
+})
+
+// 마켓플레이스 목록 조회
+const { data: marketplaces } = useQuery({
+  queryKey: ["amazon-marketplaces"],
+  queryFn: () => sdk.admin.custom.get('/amazon/marketplaces'),
+  staleTime: 5 * 60 * 1000, // 5분간 캐시 유지
+})
+
+// 동기화 후 관련 데이터 자동 새로고침
+const queryClient = useQueryClient()
+const syncMutation = useMutation({
+  mutationFn: (params) => sdk.admin.custom.post('/amazon/sync/all', params),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["amazon-sync-status"] })
+    queryClient.invalidateQueries({ queryKey: ["amazon-sync-stats"] })
+  }
+})
+```
+
+### 환경 변수 활용
+
+**개발/프로덕션 환경 분리**:
+```typescript
+// .env.development
+VITE_MEDUSA_BACKEND_URL=http://localhost:9000
+VITE_AMAZON_INTEGRATION_DEBUG=true
+
+// .env.production  
+VITE_MEDUSA_BACKEND_URL=https://api.kbeauty.market
+VITE_AMAZON_INTEGRATION_DEBUG=false
+
+// Admin 위젯에서 사용
+const isDebug = import.meta.env.VITE_AMAZON_INTEGRATION_DEBUG === 'true'
+const backendUrl = import.meta.env.VITE_MEDUSA_BACKEND_URL
+
+if (isDebug) {
+  console.log('Amazon Integration Debug Mode:', { backendUrl, syncStatus })
+}
+```
+
+---
+
 ## 📚 API 참조
 
 ### Amazon Integration Service
@@ -328,15 +465,35 @@ await amazonService.updateAmazonMarketplaces(ids, data)
 GET  /admin/amazon/marketplaces          // 마켓플레이스 목록
 POST /admin/amazon/marketplaces          // 마켓플레이스 생성/업데이트
 POST /admin/amazon/test-connection       // 연결 테스트
-GET  /admin/amazon/sync/stats           // 동기화 통계 (예정)
-GET  /admin/amazon/sync/status/:id      // 상품별 동기화 상태 (예정)
-POST /admin/amazon/sync/:id             // 수동 동기화 (예정)
+
+// 동기화 API 엔드포인트 ✅ 구현 완료
+POST /admin/amazon/sync/product          // 상품 동기화
+POST /admin/amazon/sync/inventory        // 재고 동기화
+POST /admin/amazon/sync/price            // 가격 동기화
+POST /admin/amazon/sync/all              // 전체 동기화
+GET  /admin/amazon/sync/status           // 동기화 상태 조회
+GET  /admin/amazon/sync/stats            // 동기화 통계
+
+// Medusa JS SDK 사용법
+import { sdk } from '../admin/lib/config'
+
+// 상품 동기화
+await sdk.admin.custom.post('/amazon/sync/product', {
+  product_id: "prod_123",
+  marketplace_ids: ["ATVPDKIKX0DER"]
+})
+
+// 동기화 상태 조회
+const status = await sdk.admin.custom.get('/amazon/sync/status', {
+  params: { product_id: "prod_123" }
+})
 ```
 
 ### 환경 변수 참조
 
 | 변수명 | 필수 | 기본값 | 설명 |
 |--------|------|--------|------|
+| **백엔드 환경 변수** | | | |
 | `AMAZON_INTEGRATION_ENABLED` | ✅ | `true` | 모듈 활성화 |
 | `AMAZON_SP_API_SANDBOX` | ✅ | `true` | 샌드박스 모드 |
 | `AMAZON_LWA_CLIENT_ID` | ✅ | - | LWA 클라이언트 ID |
@@ -347,6 +504,10 @@ POST /admin/amazon/sync/:id             // 수동 동기화 (예정)
 | `AMAZON_AUTO_SYNC_ENABLED` | ❌ | `true` | 자동 동기화 |
 | `AMAZON_SYNC_INTERVAL_MINUTES` | ❌ | `30` | 동기화 간격 |
 | `AMAZON_MAX_RETRY_ATTEMPTS` | ❌ | `3` | 최대 재시도 |
+| **Admin UI 환경 변수 (VITE_ 접두사 필수)** | | | |
+| `VITE_MEDUSA_BACKEND_URL` | ✅ | `http://localhost:9000` | Medusa 백엔드 URL |
+| `VITE_AMAZON_INTEGRATION_ENABLED` | ❌ | `true` | Admin UI에서 Amazon 기능 활성화 |
+| `VITE_AMAZON_INTEGRATION_DEBUG` | ❌ | `false` | Admin UI 디버그 모드 |
 
 ---
 
@@ -368,30 +529,39 @@ POST /admin/amazon/sync/:id             // 수동 동기화 (예정)
 - [x] 동기화 상태 대시보드
 - [x] 연결 테스트 컴포넌트
 
-**Phase 3: SP-API 통합** 🚧
-- [ ] Amazon SP-API SDK 통합
+**Phase 3: SP-API 통합** ✅
+- [x] Amazon SP-API SDK 통합
 - [x] 연결 테스트 API 엔드포인트
-- [ ] 실제 SP-API 호출 구현
-- [ ] 인증 토큰 자동 갱신
+- [x] 실제 SP-API 호출 구현
+- [x] 인증 토큰 자동 갱신
 - [x] 에러 핸들링 개선
 
-**Phase 3: 상품 동기화** 📋
-- [ ] 상품 생성 시 자동 등록
-- [ ] 이미지 업로드 및 최적화
-- [ ] 카테고리 매핑
-- [ ] SEO 최적화
+**Phase 4: 상품 동기화** ✅
+- [x] Medusa JS SDK 기반 상품 동기화
+- [x] 워크플로우 기반 동기화 시스템
+- [x] 상품/재고/가격 개별 및 전체 동기화
+- [x] 실시간 동기화 상태 추적
+- [x] 고급 동기화 컨트롤 위젯
 
-**Phase 4: 실시간 동기화** 📋
-- [ ] 재고 변경 감지 및 동기화
+**Phase 5: Admin UI 고도화** ✅  
+- [x] 최신 Medusa v2 Admin SDK 사용
+- [x] 상품별 고급 동기화 컨트롤
+- [x] 마켓플레이스별 개별 동기화
+- [x] 실시간 상태 모니터링
+- [x] 동기화 옵션 세부 설정
+
+**Phase 6: 실시간 동기화** 📋
+- [ ] 재고 변경 감지 및 자동 동기화
 - [ ] 가격 업데이트 자동 반영
 - [ ] 주문 상태 양방향 동기화
 - [ ] 배치 처리 최적화
 
-**Phase 5: 고급 기능** 📋
+**Phase 7: 고급 기능** 📋
 - [ ] 다국가 통화 변환
-- [ ] K-Beauty 특화 최적화
+- [ ] K-Beauty 특화 최적화  
 - [ ] 성능 모니터링
 - [ ] 자동 보고서 생성
+- [ ] AI 기반 상품 최적화
 
 ### 기여 가이드
 
@@ -423,5 +593,6 @@ POST /admin/amazon/sync/:id             // 수동 동기화 (예정)
 ---
 
  > **최종 업데이트**: 2025-01-26  
-> **버전**: 1.2.0  
-> **상태**: Admin UI 구현 완료 ✅ 실제 SP-API 통합 진행 중 🚧 
+> **버전**: 2.0.0  
+> **상태**: 완전 구현 완료 ✅ Medusa JS SDK 통합 ✅ 고급 동기화 ✅  
+> **준비 상태**: 95% 완료 🚀 

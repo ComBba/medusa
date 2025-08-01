@@ -80,6 +80,27 @@ class AmazonIntegrationModuleService extends MedusaService({
 
     return stats
   }
+
+  /**
+   * 상품 동기화 레코드 생성 (편의 메서드)
+   */
+  async createProductSync(data: any) {
+    return await this.createAmazonProductSyncs(data)
+  }
+
+  /**
+   * 상품 동기화 레코드 업데이트 (편의 메서드)
+   */
+  async updateProductSync(id: string, data: any) {
+    return await this.updateAmazonProductSyncs({ id }, data)
+  }
+
+  /**
+   * 상품 동기화 레코드 삭제 (편의 메서드)
+   */
+  async deleteProductSync(id: string) {
+    return await this.deleteAmazonProductSyncs({ id })
+  }
 }
 
 export default AmazonIntegrationModuleService 

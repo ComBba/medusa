@@ -16,6 +16,7 @@ import {
 } from "react-hook-form"
 import { useState } from "react"
 import { Pencil } from "@medusajs/icons"
+import { amazonSyncClient } from "../../../../lib/config"
 
 interface AmazonMarketplace {
   id: string
@@ -56,29 +57,16 @@ export const MarketplaceEditForm = ({ marketplace, onSave }: MarketplaceEditForm
     try {
       setSaving(true)
       
-      const response = await fetch('/admin/amazon/marketplaces', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('medusa_admin_token') || ''}`,
-        },
-        body: JSON.stringify({
-          marketplace_id: marketplace.marketplace_id,
-          seller_id: data.seller_id,
-          mws_auth_token: data.mws_auth_token,
-          auto_sync: data.auto_sync,
-          is_active: marketplace.is_active // 현재 활성화 상태 유지
-        })
+      await amazonSyncClient.updateMarketplace(marketplace.id, {
+        seller_id: data.seller_id,
+        mws_token: data.mws_auth_token,
+        auto_sync: data.auto_sync,
+        is_active: marketplace.is_active
       })
 
-      if (response.ok) {
-        toast.success(`${marketplace.name} 설정이 업데이트되었습니다.`)
-        setOpen(false)
-        onSave() // 부모 컴포넌트에서 목록 새로고침
-      } else {
-        throw new Error('Failed to update marketplace')
-      }
+      toast.success(`${marketplace.name} 설정이 업데이트되었습니다.`)
+      setOpen(false)
+      onSave() // 부모 컴포넌트에서 목록 새로고침
     } catch (error) {
       console.error('Error updating marketplace:', error)
       toast.error("마켓플레이스 설정 업데이트에 실패했습니다.")

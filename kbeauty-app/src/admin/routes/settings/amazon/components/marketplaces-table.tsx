@@ -11,6 +11,7 @@ import {
 } from "@medusajs/ui"
 import { useState, useEffect } from "react"
 import { toast } from "@medusajs/ui"
+import { amazonSyncClient } from "../../../../lib/config"
 import { MarketplaceEditForm } from "./marketplace-edit-form"
 
 interface AmazonMarketplace {
@@ -37,31 +38,11 @@ export const AmazonMarketplacesTable = ({ onMarketplaceSelect }: AmazonMarketpla
   const fetchMarketplaces = async () => {
     try {
       setLoading(true)
-      
-      // Admin UI에서 인증된 요청
-      const response = await fetch('/admin/amazon/marketplaces', {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('medusa_admin_token') || ''}`,
-        }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        setMarketplaces(data.marketplaces || [])
-      } else {
-        // 응답 상태 확인
-        if (response.status === 401) {
-          toast.error("인증이 필요합니다. 다시 로그인해주세요.")
-        } else {
-          toast.error(`마켓플레이스 조회 실패: ${response.status}`)
-        }
-        console.error('Response status:', response.status, response.statusText)
-      }
+      const data = await amazonSyncClient.getMarketplaces() as any
+      setMarketplaces(data.marketplaces || [])
     } catch (error) {
       console.error('Error fetching marketplaces:', error)
-      toast.error("마켓플레이스 목록을 가져오는데 실패했습니다.")
+      toast.error("마켓플레이스 목록을 불러올 수 없습니다.")
     } finally {
       setLoading(false)
     }
@@ -72,32 +53,18 @@ export const AmazonMarketplacesTable = ({ onMarketplaceSelect }: AmazonMarketpla
     try {
       setUpdating(marketplace.id)
       
-      const response = await fetch('/admin/amazon/marketplaces', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('medusa_admin_token') || ''}`,
-        },
-        body: JSON.stringify({
-          marketplace_id: marketplace.marketplace_id,
-          is_active: !marketplace.is_active,
-          auto_sync: marketplace.auto_sync,
-          seller_id: marketplace.seller_id
-        })
+      await amazonSyncClient.updateMarketplace(marketplace.id, {
+        is_active: !marketplace.is_active,
+        auto_sync: marketplace.auto_sync,
+        seller_id: marketplace.seller_id
       })
 
-      if (response.ok) {
-        await response.json()
-        toast.success(
-          marketplace.is_active 
-            ? `${marketplace.name} 마켓플레이스가 비활성화되었습니다.`
-            : `${marketplace.name} 마켓플레이스가 활성화되었습니다.`
-        )
-        await fetchMarketplaces() // 목록 새로고침
-      } else {
-        throw new Error('Failed to update marketplace')
-      }
+      toast.success(
+        marketplace.is_active 
+          ? `${marketplace.name} 마켓플레이스가 비활성화되었습니다.`
+          : `${marketplace.name} 마켓플레이스가 활성화되었습니다.`
+      )
+      await fetchMarketplaces() // 목록 새로고침
     } catch (error) {
       console.error('Error updating marketplace:', error)
       toast.error("마켓플레이스 업데이트에 실패했습니다.")

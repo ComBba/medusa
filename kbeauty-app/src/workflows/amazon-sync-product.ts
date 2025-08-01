@@ -9,10 +9,16 @@ import { AMAZON_INTEGRATION_MODULE } from "../modules/amazon-integration"
 import AmazonIntegrationModuleService from "../modules/amazon-integration/service"
 import { ProductMapperService } from "../modules/amazon-integration/services/product-mapper"
 import { AmazonSPAPIClient } from "../modules/amazon-integration/services/sp-api-client"
+import { SyncType } from "../modules/amazon-integration/types/index"
 
 export type AmazonSyncProductWorkflowInput = {
   product: ProductDTO
   marketplace_ids?: string[] // 특정 마켓플레이스만 동기화
+  options?: {
+    sync_images?: boolean
+    include_variants?: boolean
+    force_update?: boolean
+  }
 }
 
 /**

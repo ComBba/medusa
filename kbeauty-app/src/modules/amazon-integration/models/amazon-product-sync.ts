@@ -24,6 +24,14 @@ const AmazonProductSync = model.define("amazon_product_sync", {
     "cancelled"   // 동기화 취소
   ]).default("pending"),
   
+  // 동기화 타입
+  sync_type: model.enum([
+    "product",    // 상품 정보 동기화
+    "inventory",  // 재고 동기화
+    "price",      // 가격 동기화
+    "all"         // 전체 동기화
+  ]).default("product"),
+  
   // 상세 정보
   last_sync_at: model.dateTime().nullable(),
   sync_attempts: model.number().default(0),

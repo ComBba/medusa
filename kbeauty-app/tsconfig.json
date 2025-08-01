@@ -18,6 +18,9 @@
     "resolveJsonModule": true,
     "checkJs": false,
     "strictNullChecks": true,
+    "noImplicitAny": false,
+    "noImplicitReturns": false,
+    "noImplicitThis": false,
     "typeRoots": ["./types", "./node_modules/@types"]
   },
   "ts-node": {

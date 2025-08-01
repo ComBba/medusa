@@ -53,14 +53,13 @@ export default async function activateMarketplace({ container }: ExecArgs) {
       logger.info(`🔄 마켓플레이스 활성화 중... (ID: ${marketplaceId})`)
       
       try {
-        await amazonService.updateAmazonMarketplaces(
-          [marketplaceId],
-          {
-            is_active: true,
-            auto_sync: true,
-            seller_id: process.env.AMAZON_SELLER_ID || 'TEST_SELLER_ID'
-          }
-        )
+        await amazonService.updateAmazonMarketplaces({
+          id: marketplaceId
+        }, {
+          is_active: true,
+          auto_sync: true,
+          seller_id: process.env.AMAZON_SELLER_ID || 'TEST_SELLER_ID'
+        })
         
         logger.info('✅ 마켓플레이스 활성화 완료!')
       } catch (updateError) {

@@ -8,6 +8,7 @@ import {
 } from "@medusajs/ui"
 import { useState } from "react"
 import { CheckCircle, XCircle, Loader } from "@medusajs/icons"
+import { amazonSyncClient } from "../../../../lib/config"
 
 interface AmazonMarketplace {
   id: string
@@ -43,7 +44,7 @@ export const ConnectionTest = ({ marketplace }: ConnectionTestProps) => {
       setTesting(true)
       setTestResults([])
       
-      const response = await fetch('/admin/amazon/test-connection', {
+              const response = await fetch('https://api.kbeauty.market/admin/amazon/test-connection', {
         method: 'POST',
         credentials: 'include',
         headers: {
