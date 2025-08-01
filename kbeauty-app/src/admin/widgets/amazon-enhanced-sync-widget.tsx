@@ -42,15 +42,19 @@ const AmazonEnhancedSyncWidget = ({ data }: DetailWidgetProps<AdminProduct>) => 
     selected_marketplaces: ["ATVPDKIKX0DER"] // 기본: 미국 마켓플레이스
   })
 
-  // 마켓플레이스 목록 조회
+  // 마켓플레이스 목록 조회 (표준 Medusa v2 패턴)
   const { data: marketplaces } = useQuery({
     queryKey: ["amazon-marketplaces"],
     queryFn: async () => {
-      const response = await sdk.client.fetch("/admin/amazon/marketplaces", {
-        method: "GET",
-        credentials: "include"
-      }) as { marketplaces?: any[] }
-      return response?.marketplaces || []
+      try {
+        const response = await sdk.client.fetch("/admin/amazon/marketplaces", {
+          method: "GET",
+        }) as { marketplaces?: any[] }
+        return response?.marketplaces || []
+      } catch (error) {
+        console.error("마켓플레이스 목록 조회 실패:", error)
+        return []
+      }
     }
   })
 
@@ -91,14 +95,10 @@ const AmazonEnhancedSyncWidget = ({ data }: DetailWidgetProps<AdminProduct>) => 
 
       const response = await sdk.client.fetch(`/admin/workflows/${workflowId}/execute`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        credentials: "include",
-        body: JSON.stringify({
+        body: {
           input,
           options: { async: true }
-        })
+        }
       })
       
       return response

@@ -1,6 +1,12 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 
+// CORS가 자동으로 적용되지만 명시적으로 허용할 수도 있음
+export const CORS = {
+  origin: true,
+  credentials: true,
+}
+
 /**
  * GET /admin/workflows
  * 등록된 워크플로우 목록 조회

@@ -1,4 +1,10 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+
+// CORS가 자동으로 적용되지만 명시적으로 허용
+export const CORS = {
+  origin: true,
+  credentials: true,
+}
 import { amazonSyncProductWorkflow } from "../../../../../workflows/amazon-sync-product"
 import { amazonSyncInventoryWorkflow } from "../../../../../workflows/amazon-sync-inventory" 
 import { amazonSyncPriceWorkflow } from "../../../../../workflows/amazon-sync-price"

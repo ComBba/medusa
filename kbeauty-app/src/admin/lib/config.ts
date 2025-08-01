@@ -24,7 +24,7 @@ export class AmazonSyncClient {
   }
 
   /**
-   * 모든 Amazon 마켓플레이스 목록 조회
+   * 모든 Amazon 마켓플레이스 목록 조회 (표준 Medusa v2 패턴)
    */
   async getMarketplaces() {
     try {
@@ -39,7 +39,7 @@ export class AmazonSyncClient {
   }
 
   /**
-   * 마켓플레이스 설정 업데이트
+   * 마켓플레이스 설정 업데이트 (표준 Medusa v2 패턴)
    */
   async updateMarketplace(marketplaceId: string, data: {
     seller_id?: string
@@ -60,7 +60,7 @@ export class AmazonSyncClient {
   }
 
   /**
-   * Amazon SP-API 연결 테스트
+   * Amazon SP-API 연결 테스트 (표준 Medusa v2 패턴)
    */
   async testConnection(marketplaceId: string) {
     try {
@@ -76,7 +76,7 @@ export class AmazonSyncClient {
   }
 
   /**
-   * 상품을 Amazon에 동기화
+   * 상품을 Amazon에 동기화 (표준 Medusa v2 패턴)
    */
   async syncProduct(productId: string, marketplaceIds: string[] = []) {
     try {
@@ -95,7 +95,7 @@ export class AmazonSyncClient {
   }
 
   /**
-   * 재고 동기화
+   * 재고 동기화 (표준 Medusa v2 패턴)
    */
   async syncInventory(productId: string, marketplaceIds: string[] = []) {
     try {
@@ -114,7 +114,7 @@ export class AmazonSyncClient {
   }
 
   /**
-   * 가격 동기화
+   * 가격 동기화 (표준 Medusa v2 패턴)
    */
   async syncPrice(productId: string, marketplaceIds: string[] = []) {
     try {
@@ -133,7 +133,7 @@ export class AmazonSyncClient {
   }
 
   /**
-   * 일괄 동기화 (상품, 재고, 가격)
+   * 일괄 동기화 (표준 Medusa v2 패턴)
    */
   async syncAll(productId: string, marketplaceIds: string[] = []) {
     try {
@@ -152,7 +152,7 @@ export class AmazonSyncClient {
   }
 
   /**
-   * 동기화 상태 조회
+   * 동기화 상태 조회 (표준 Medusa v2 패턴)
    */
   async getSyncStatus(productId?: string) {
     try {
@@ -171,7 +171,7 @@ export class AmazonSyncClient {
   }
 
   /**
-   * 동기화 통계 조회
+   * 동기화 통계 조회 (표준 Medusa v2 패턴)
    */
   async getSyncStats() {
     try {

@@ -25,7 +25,6 @@ const WorkflowsPage = () => {
     queryFn: async () => {
       const response = await sdk.client.fetch("/admin/workflows", {
         method: "GET",
-        credentials: "include"
       })
       return response as { workflows: Workflow[], count: number }
     }
@@ -40,14 +39,10 @@ const WorkflowsPage = () => {
     }) => {
       const response = await sdk.client.fetch(`/admin/workflows/${workflowId}/execute`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        credentials: "include",
-        body: JSON.stringify({
+        body: {
           input,
           options: { async }
-        })
+        }
       })
       return response
     },
