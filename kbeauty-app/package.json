@@ -32,7 +32,9 @@
     "@mikro-orm/postgresql": "6.4.3",
     "awilix": "^8.0.1",
     "pg": "^8.13.0",
-    "react-hook-form": "^7.61.1"
+    "react-hook-form": "^7.61.1",
+    "zod": "3.22.4",
+    "zod-validation-error": "3.3.1"
   },
   "devDependencies": {
     "@medusajs/test-utils": "2.8.7",
@@ -54,5 +56,13 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "resolutions": {
+    "zod": "3.22.4",
+    "zod-validation-error": "3.3.1"
+  },
+  "overrides": {
+    "zod": "3.22.4",
+    "zod-validation-error": "3.3.1"
   }
 }
