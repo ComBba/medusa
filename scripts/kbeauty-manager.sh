@@ -181,7 +181,7 @@ start_backend() {
     fi
     
     cd "$BACKEND_DIR"
-    nohup yarn dev > "$log_file" 2>&1 &
+    nohup npm run dev > "$log_file" 2>&1 &
     local pid=$!
     echo $pid > "$pid_file"
     
