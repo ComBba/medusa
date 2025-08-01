@@ -146,6 +146,22 @@ const generatedgeneratedHowToTutorialsSidebarSidebar = {
               "loaded": true,
               "isPathHref": true,
               "type": "ref",
+              "title": "Retrieve Cart Totals",
+              "path": "https://docs.medusajs.com/resources/commerce-modules/cart/cart-totals",
+              "children": []
+            },
+            {
+              "loaded": true,
+              "isPathHref": true,
+              "type": "ref",
+              "title": "Retrieve Order Totals",
+              "path": "https://docs.medusajs.com/resources/commerce-modules/order/order-totals",
+              "children": []
+            },
+            {
+              "loaded": true,
+              "isPathHref": true,
+              "type": "ref",
               "title": "Send Notification",
               "path": "https://docs.medusajs.com/resources/infrastructure-modules/notification/send-notification",
               "children": []
@@ -493,10 +509,28 @@ const generatedgeneratedHowToTutorialsSidebarSidebar = {
         {
           "loaded": true,
           "isPathHref": true,
+          "type": "ref",
+          "title": "Personalized Products",
+          "path": "/recipes/personalized-products/example",
+          "description": "Learn how to implement personalized products in your Medusa store.",
+          "children": []
+        },
+        {
+          "loaded": true,
+          "isPathHref": true,
           "type": "link",
           "title": "Phone Authentication",
           "path": "/how-to-tutorials/tutorials/phone-auth",
           "description": "Learn how to allow users to authenticate using their phone numbers.",
+          "children": []
+        },
+        {
+          "loaded": true,
+          "isPathHref": true,
+          "type": "link",
+          "title": "Pre-Order Products",
+          "path": "/how-to-tutorials/tutorials/preorder",
+          "description": "Learn how to implement pre-order functionality for products in your Medusa store.",
           "children": []
         },
         {

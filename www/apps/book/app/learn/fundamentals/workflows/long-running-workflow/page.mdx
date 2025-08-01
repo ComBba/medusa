@@ -82,6 +82,7 @@ A workflow is also considered long-running if:
 
 - One of its steps has its `async` configuration set to `true` and doesn't return a step response.
 - One of its steps has its `retryInterval` option set as explained in the [Retry Failed Steps chapter](../retry-failed-steps/page.mdx).
+- One of its [nested workflows](../execute-another-workflow/page.mdx) is a long-running workflow.
 
 ---
 

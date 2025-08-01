@@ -77,6 +77,16 @@ moduleIntegrationTestRunner<IPricingModuleService>({
               rules_count: 0,
             },
             {
+              id: "price-PLN-min-quantity-only",
+              title: "price PLN - min quantity only",
+              price_set_id: "price-set-PLN",
+              currency_code: "PLN",
+              amount: 1250,
+              min_quantity: 20,
+              max_quantity: null,
+              rules_count: 0,
+            },
+            {
               id: "price-ETH",
               title: "price ETH",
               price_set_id: "price-set-ETH",
@@ -446,6 +456,55 @@ moduleIntegrationTestRunner<IPricingModuleService>({
                 price_list_type: null,
                 min_quantity: 1,
                 max_quantity: 10,
+              },
+            },
+          ])
+        })
+
+        it("should successfully calculate prices where only min quantity is set", async () => {
+          const context = {
+            currency_code: "PLN",
+            region_id: "PL",
+            quantity: 255,
+          }
+
+          const calculatedPrice = await service.calculatePrices(
+            { id: ["price-set-EUR", "price-set-PLN"] },
+            { context }
+          )
+
+
+          expect(calculatedPrice).toEqual([
+            {
+              id: "price-set-PLN",
+              is_calculated_price_price_list: false,
+              is_calculated_price_tax_inclusive: false,
+              calculated_amount: 1250,
+              raw_calculated_amount: {
+                value: "1250",
+                precision: 20,
+              },
+              is_original_price_price_list: false,
+              is_original_price_tax_inclusive: false,
+              original_amount: 1250,
+              raw_original_amount: {
+                value: "1250",
+                precision: 20,
+              },
+              currency_code: "PLN",
+              calculated_price: {
+                id: "price-PLN-min-quantity-only",
+                price_list_id: null,
+                price_list_type: null,
+                min_quantity: 20,
+                max_quantity: null,
+              },
+              original_price: {
+                id: "price-PLN-min-quantity-only",
+                price_list_id: null,
+                price_list_type: null,
+                min_quantity: 20,
+                max_quantity: null,
               },
             },
           ])

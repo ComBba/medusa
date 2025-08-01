@@ -8,6 +8,14 @@ export const howTo = [
     "path": "https://docs.medusajs.com/resources/commerce-modules/auth/reset-password"
   },
   {
+    "title": "Retrieve Cart Totals",
+    "path": "https://docs.medusajs.com/resources/commerce-modules/cart/cart-totals"
+  },
+  {
+    "title": "Retrieve Order Totals",
+    "path": "https://docs.medusajs.com/resources/commerce-modules/order/order-totals"
+  },
+  {
     "title": "Get Variant Prices",
     "path": "https://docs.medusajs.com/resources/commerce-modules/product/guides/price"
   },

@@ -8,12 +8,20 @@ export const server = [
     "path": "https://docs.medusajs.com/resources/commerce-modules/auth/reset-password"
   },
   {
+    "title": "Retrieve Cart Totals using Query",
+    "path": "https://docs.medusajs.com/resources/commerce-modules/cart/cart-totals"
+  },
+  {
     "title": "Extend Cart",
     "path": "https://docs.medusajs.com/resources/commerce-modules/cart/extend"
   },
   {
     "title": "Extend Customer",
     "path": "https://docs.medusajs.com/resources/commerce-modules/customer/extend"
+  },
+  {
+    "title": "Retrieve Order Totals Using Query",
+    "path": "https://docs.medusajs.com/resources/commerce-modules/order/order-totals"
   },
   {
     "title": "Extend Product",
@@ -62,6 +70,10 @@ export const server = [
   {
     "title": "Phone Authentication",
     "path": "https://docs.medusajs.com/resources/how-to-tutorials/tutorials/phone-auth"
+  },
+  {
+    "title": "Pre-Orders",
+    "path": "https://docs.medusajs.com/resources/how-to-tutorials/tutorials/preorder"
   },
   {
     "title": "Product Reviews",
@@ -114,6 +126,10 @@ export const server = [
   {
     "title": "Bundled Products",
     "path": "https://docs.medusajs.com/resources/recipes/bundled-products/examples/standard"
+  },
+  {
+    "title": "Personalized Products",
+    "path": "https://docs.medusajs.com/resources/recipes/personalized-products/example"
   },
   {
     "title": "Use Analytics Module",

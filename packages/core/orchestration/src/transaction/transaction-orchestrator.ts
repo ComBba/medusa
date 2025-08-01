@@ -1185,7 +1185,9 @@ export class TransactionOrchestrator extends EventEmitter {
     )
 
     if (ret.transactionIsCancelling) {
-      return await this.cancelTransaction(transaction)
+      await this.cancelTransaction(transaction, {
+        preventExecuteNext: true,
+      })
     }
 
     if (isAsync && !ret.stopExecution) {
@@ -1204,6 +1206,10 @@ export class TransactionOrchestrator extends EventEmitter {
     isPermanent: boolean,
     response?: unknown
   ): Promise<void> {
+    const isAsync = step.isCompensating()
+      ? step.definition.compensateAsync
+      : step.definition.async
+
     if (isDefined(response) && step.saveResponse) {
       transaction.addResponse(
         step.definition.action!,
@@ -1222,7 +1228,14 @@ export class TransactionOrchestrator extends EventEmitter {
     )
 
     if (ret.transactionIsCancelling) {
-      return await this.cancelTransaction(transaction)
+      await this.cancelTransaction(transaction, {
+        preventExecuteNext: true,
+      })
+    }
+
+    if (isAsync && !ret.stopExecution) {
+      // Schedule to continue the execution of async steps because they are not awaited on purpose and can be handled by another machine
+      await transaction.scheduleRetry(step, 0)
     }
   }
 
@@ -1287,7 +1300,8 @@ export class TransactionOrchestrator extends EventEmitter {
    * @param transaction - The transaction to be reverted
    */
   public async cancelTransaction(
-    transaction: DistributedTransactionType
+    transaction: DistributedTransactionType,
+    options?: { preventExecuteNext?: boolean }
   ): Promise<void> {
     if (transaction.modelId !== this.id) {
       throw new MedusaError(
@@ -1318,6 +1332,10 @@ export class TransactionOrchestrator extends EventEmitter {
     flow.cancelledAt = Date.now()
 
     await transaction.saveCheckpoint()
+
+    if (options?.preventExecuteNext) {
+      return
+    }
 
     await this.executeNext(transaction)
   }

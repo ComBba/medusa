@@ -126,14 +126,24 @@ export class PricingRepository
 
     if (quantity !== undefined) {
       query.andWhere(function (this: Knex.QueryBuilder) {
-        this.where(function (this: Knex.QueryBuilder) {
+        this.orWhere(function (this: Knex.QueryBuilder) {
           this.where("price.min_quantity", "<=", quantity).andWhere(
             "price.max_quantity",
             ">=",
             quantity
           )
-        }).orWhere(function (this: Knex.QueryBuilder) {
-          this.whereNull("price.min_quantity").whereNull("price.max_quantity")
+
+          this.orWhere("price.min_quantity", "<=", quantity).whereNull(
+            "price.max_quantity"
+          )
+
+          this.orWhereNull("price.min_quantity").whereNull("price.max_quantity")
+
+          this.orWhereNull("price.min_quantity").andWhere(
+            "price.max_quantity",
+            ">=",
+            quantity
+          )
         })
       })
     } else {

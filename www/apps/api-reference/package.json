@@ -16,8 +16,8 @@
   "dependencies": {
     "@mdx-js/loader": "^3.1.0",
     "@mdx-js/react": "^3.1.0",
-    "@medusajs/icons": "2.8.7",
-    "@medusajs/ui": "4.0.17",
+    "@medusajs/icons": "2.8.8",
+    "@medusajs/ui": "4.0.18",
     "@next/mdx": "15.3.5",
     "@react-hook/resize-observer": "^2.0.2",
     "@readme/openapi-parser": "^2.5.0",
