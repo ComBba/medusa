@@ -216,7 +216,7 @@ const WorkflowsPage = () => {
 }
 
 export const config = defineRouteConfig({
-  label: "워크플로우",
+  label: "Workflows",
   icon: DocumentText,
 })
 
