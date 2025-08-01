@@ -17,14 +17,16 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "checkJs": false,
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "typeRoots": ["./types", "./node_modules/@types"]
   },
   "ts-node": {
     "swc": true
   },
   "include": [
     "**/*",
-    ".medusa/types/*"
+    ".medusa/types/*",
+    "src/types/**/*"
   ],
   "exclude": [
     "node_modules",

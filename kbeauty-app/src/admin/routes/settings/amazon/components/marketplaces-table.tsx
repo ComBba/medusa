@@ -37,13 +37,27 @@ export const AmazonMarketplacesTable = ({ onMarketplaceSelect }: AmazonMarketpla
   const fetchMarketplaces = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/admin/amazon/marketplaces')
+      
+      // Admin UI에서 인증된 요청
+      const response = await fetch('/admin/amazon/marketplaces', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('medusa_admin_token') || ''}`,
+        }
+      })
       
       if (response.ok) {
         const data = await response.json()
         setMarketplaces(data.marketplaces || [])
       } else {
-        throw new Error('Failed to fetch marketplaces')
+        // 응답 상태 확인
+        if (response.status === 401) {
+          toast.error("인증이 필요합니다. 다시 로그인해주세요.")
+        } else {
+          toast.error(`마켓플레이스 조회 실패: ${response.status}`)
+        }
+        console.error('Response status:', response.status, response.statusText)
       }
     } catch (error) {
       console.error('Error fetching marketplaces:', error)
@@ -60,8 +74,10 @@ export const AmazonMarketplacesTable = ({ onMarketplaceSelect }: AmazonMarketpla
       
       const response = await fetch('/admin/amazon/marketplaces', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('medusa_admin_token') || ''}`,
         },
         body: JSON.stringify({
           marketplace_id: marketplace.marketplace_id,

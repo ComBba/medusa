@@ -25,7 +25,13 @@ export const SyncDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/admin/amazon/sync/stats')
+      const response = await fetch('/admin/amazon/sync/stats', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('medusa_admin_token') || ''}`,
+        }
+      })
       
       if (response.ok) {
         const data = await response.json()

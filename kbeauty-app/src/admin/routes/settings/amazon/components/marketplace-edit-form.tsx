@@ -58,8 +58,10 @@ export const MarketplaceEditForm = ({ marketplace, onSave }: MarketplaceEditForm
       
       const response = await fetch('/admin/amazon/marketplaces', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('medusa_admin_token') || ''}`,
         },
         body: JSON.stringify({
           marketplace_id: marketplace.marketplace_id,
