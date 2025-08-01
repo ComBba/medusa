@@ -6,9 +6,9 @@ module.exports = defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
     http: {
-      storeCors: process.env.STORE_CORS!,
-      adminCors: process.env.ADMIN_CORS!,
-      authCors: process.env.AUTH_CORS!,
+      storeCors: process.env.STORE_CORS || "https://admin.kbeauty.market,http://admin.kbeauty.market,https://api.kbeauty.market,http://localhost:10000,http://localhost:9000",
+      adminCors: process.env.ADMIN_CORS || "https://admin.kbeauty.market,http://admin.kbeauty.market,https://api.kbeauty.market,http://localhost:10000,http://localhost:9000",
+      authCors: process.env.AUTH_CORS || "https://admin.kbeauty.market,http://admin.kbeauty.market,https://api.kbeauty.market,http://localhost:10000,http://localhost:9000",
       jwtSecret: process.env.JWT_SECRET || "supersecret",
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
     }
@@ -26,8 +26,15 @@ module.exports = defineConfig({
           include: [
             "@medusajs/admin-sdk",
             "@medusajs/ui", 
-            "@medusajs/framework/types"
-          ]
+            "@medusajs/framework/types",
+            "@medusajs/dashboard"
+          ],
+          exclude: ["@medusajs/js-sdk"]
+        },
+        build: {
+          rollupOptions: {
+            external: ["@medusajs/js-sdk"]
+          }
         }
       }
     }

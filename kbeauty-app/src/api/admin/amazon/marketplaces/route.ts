@@ -2,6 +2,22 @@ import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { AMAZON_INTEGRATION_MODULE } from "../../../../modules/amazon-integration"
 import AmazonIntegrationModuleService from "../../../../modules/amazon-integration/service"
 
+/**
+ * OPTIONS /admin/amazon/marketplaces
+ * CORS preflight 요청 처리
+ */
+export const OPTIONS = async (
+  req: MedusaRequest,
+  res: MedusaResponse
+) => {
+  res.header("Access-Control-Allow-Origin", req.headers.origin || "*")
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+  res.header("Access-Control-Allow-Credentials", "true")
+  res.header("Access-Control-Max-Age", "86400")
+  res.status(204).end()
+}
+
 // 기본 Amazon 마켓플레이스 설정
 const DEFAULT_MARKETPLACES = [
   {
