@@ -1,205 +1,153 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import { AMAZON_INTEGRATION_MODULE } from "../../../../modules/amazon-integration"
 import AmazonIntegrationModuleService from "../../../../modules/amazon-integration/service"
-import { amazonSyncProductWorkflow } from "../../../../workflows/amazon-sync-product"
-import { Modules } from "@medusajs/framework/utils"
 
 /**
- * GET /admin/amazon/sync
- * Amazon 동기화 상태 및 통계 조회
+ * GET /admin/amazon/sync - 상품 동기화 목록 조회
  */
-export const GET = async (
-  req: MedusaRequest<{}, { 
-    marketplace_id?: string
-    status?: string 
-    limit?: number
-    offset?: number
-  }>,
+export async function GET(
+  req: MedusaRequest,
   res: MedusaResponse
-) => {
-  const amazonService: AmazonIntegrationModuleService = req.scope.resolve(AMAZON_INTEGRATION_MODULE)
+): Promise<void> {
+  const amazonService: AmazonIntegrationModuleService = req.scope.resolve("amazonIntegrationModuleService")
   
   try {
-    const { marketplace_id, status, limit: limitParam = 50, offset: offsetParam = 0 } = req.query
-    
-    // Query parameters 타입 변환
-    const limit = typeof limitParam === 'string' ? parseInt(limitParam, 10) : (limitParam as number) || 50
-    const offset = typeof offsetParam === 'string' ? parseInt(offsetParam, 10) : (offsetParam as number) || 0
-    const marketplaceId = typeof marketplace_id === 'string' ? marketplace_id : undefined
-    
-    // 필터 구성
+    const {
+      marketplace_id,
+      status,
+      limit = "20",
+      offset = "0",
+      search
+    } = req.query
+
+    // 쿼리 매개변수 구성
     const filters: any = {}
-    if (marketplaceId) filters.amazon_marketplace_id = marketplaceId
-    if (status) filters.sync_status = status
-    
-    // 동기화 레코드 조회
-    const syncRecords = await amazonService.listAmazonProductSyncs(filters)
-    
-    // 페이지네이션
-    const paginatedRecords = syncRecords.slice(offset, offset + limit)
-    
-    // 통계 정보
-    const statistics = await amazonService.getSyncStatistics(marketplaceId)
-    
-    // 활성 마켓플레이스 목록
-    const activeMarketplaces = await amazonService.getActiveMarketplaces()
-    
+    if (marketplace_id) filters.amazon_marketplace_id = marketplace_id
+    if (status && status !== 'all') filters.sync_status = status
+    if (search) {
+      // 상품명, SKU, ASIN으로 검색
+      filters.$or = [
+        { amazon_sku: { $ilike: `%${search}%` } },
+        { amazon_asin: { $ilike: `%${search}%` } }
+      ]
+    }
+
+    const pagination = {
+      take: parseInt(limit as string, 10),
+      skip: parseInt(offset as string, 10)
+    }
+
+    // 실제 데이터베이스에서 동기화 레코드 조회
+    const syncRecords = await amazonService.listAmazonProductSyncs(filters, pagination)
+    const totalCount = await amazonService.countAmazonProductSyncs(filters)
+
     res.json({
-      sync_records: paginatedRecords,
-      statistics,
-      active_marketplaces: activeMarketplaces.length,
+      sync_records: syncRecords,
       pagination: {
-        total: syncRecords.length,
-        limit,
-        offset,
-        has_more: syncRecords.length > offset + limit
+        total: totalCount,
+        limit: pagination.take,
+        offset: pagination.skip,
+        has_more: pagination.skip + pagination.take < totalCount
       }
     })
-    
+
   } catch (error) {
+    console.error('Failed to fetch sync records:', error)
     res.status(500).json({
-      message: "동기화 상태 조회 중 오류 발생",
-      error: error.message
+      error: "동기화 목록을 가져오는데 실패했습니다",
+      details: error instanceof Error ? error.message : String(error)
     })
   }
 }
 
 /**
- * POST /admin/amazon/sync
- * 수동 Amazon 동기화 실행
+ * POST /admin/amazon/sync - 새로운 상품 동기화 시작
  */
-export const POST = async (
-  req: MedusaRequest<{
-    product_id: string
-    marketplace_ids?: string[]
-  }>,
+export async function POST(
+  req: MedusaRequest,
   res: MedusaResponse
-) => {
-  const amazonService: AmazonIntegrationModuleService = req.scope.resolve(AMAZON_INTEGRATION_MODULE)
-  const productService = req.scope.resolve(Modules.PRODUCT)
+): Promise<void> {
+  const amazonService: AmazonIntegrationModuleService = req.scope.resolve("amazonIntegrationModuleService")
   
   try {
-    const { product_id, marketplace_ids } = req.body
-    
-    if (!product_id) {
-      return res.status(400).json({
-        message: "product_id는 필수입니다"
-      })
+    const { product_ids, marketplace_id, mode = 'VALIDATION_PREVIEW' } = req.body as {
+      product_ids?: string[]
+      marketplace_id?: string
+      mode?: string
     }
-    
-    // 상품 조회
-    const product = await productService.retrieveProduct(product_id)
-    
-    if (!product) {
-      return res.status(404).json({
-        message: "상품을 찾을 수 없습니다"
-      })
-    }
-    
-    // Amazon 동기화 워크플로우 실행
-    const { result } = await amazonSyncProductWorkflow(req.scope).run({
-      input: {
-        product,
-        marketplace_ids
-      }
-    })
-    
-    res.json({
-      message: "Amazon 동기화가 시작되었습니다",
-      result
-    })
-    
-  } catch (error) {
-    res.status(500).json({
-      message: "동기화 실행 중 오류 발생",
-      error: error.message
-    })
-  }
-}
 
-/**
- * PUT /admin/amazon/sync/retry
- * 실패한 동기화 재시도
- */
-export const PUT = async (
-  req: MedusaRequest<{
-    sync_record_ids?: string[]
-    marketplace_id?: string
-  }>,
-  res: MedusaResponse
-) => {
-  const amazonService: AmazonIntegrationModuleService = req.scope.resolve(AMAZON_INTEGRATION_MODULE)
-  const productService = req.scope.resolve(Modules.PRODUCT)
-  
-  try {
-    const { sync_record_ids, marketplace_id } = req.body
-    
-    let recordsToRetry: any[] = []
-    
-    if (sync_record_ids?.length) {
-      // 특정 동기화 레코드들 재시도
-      recordsToRetry = await amazonService.listAmazonProductSyncs({
-        id: sync_record_ids
+    if (!product_ids || !Array.isArray(product_ids) || product_ids.length === 0) {
+      res.status(400).json({
+        error: "product_ids는 필수이며 배열이어야 합니다"
       })
-    } else if (marketplace_id) {
-      // 특정 마켓플레이스의 실패한 동기화들 재시도
-      recordsToRetry = await amazonService.listAmazonProductSyncs({
-        amazon_marketplace_id: marketplace_id,
-        sync_status: "failed"
-      })
-    } else {
-      // 모든 실패한 동기화 재시도
-      recordsToRetry = await amazonService.getFailedSyncs()
+      return
     }
-    
-    if (recordsToRetry.length === 0) {
-      return res.json({
-        message: "재시도할 동기화 레코드가 없습니다",
-        retried_count: 0
+
+    if (!marketplace_id) {
+      res.status(400).json({
+        error: "marketplace_id는 필수입니다"
       })
+      return
     }
+
+    // 실제 Amazon SP-API를 사용한 상품 동기화 시작
+    const syncResults: Array<{
+      product_id: string
+      sync_record_id?: string
+      status: string
+      submission_id?: string
+      mode?: string
+      error?: string
+    }> = []
     
-    let successCount = 0
-    let errorCount = 0
-    
-    // 각 동기화 레코드에 대해 재시도
-    for (const syncRecord of recordsToRetry) {
+    for (const productId of product_ids) {
       try {
-        // 상품 조회
-        const product = await productService.retrieveProduct(syncRecord.medusa_product_id)
-        
-        if (!product) {
-          errorCount++
-          continue
-        }
-        
-        // 동기화 재시도
-        await amazonSyncProductWorkflow(req.scope).run({
-          input: {
-            product,
-            marketplace_ids: [syncRecord.amazon_marketplace_id]
-          }
+        const syncRecord = await amazonService.createProductSync({
+          medusa_product_id: productId,
+          amazon_marketplace_id: marketplace_id,
+          sync_status: 'pending',
+          sync_attempts: 0,
+          max_attempts: 3,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
-        
-        successCount++
-        
+
+        // Amazon SP-API 샌드박스 환경에서 상품 등록 시작
+        // VALIDATION_PREVIEW 모드로 테스트
+        const submitResult = await amazonService.submitProductToAmazon(
+          productId, 
+          marketplace_id, 
+          mode
+        )
+
+        syncResults.push({
+          product_id: productId,
+          sync_record_id: syncRecord.id,
+          status: 'initiated',
+          submission_id: submitResult?.submissionId,
+          mode: mode
+        })
+
       } catch (error) {
-        console.error(`동기화 재시도 실패: ${syncRecord.id}`, error)
-        errorCount++
+        console.error(`Failed to sync product ${productId}:`, error)
+        syncResults.push({
+          product_id: productId,
+          status: 'failed',
+          error: error instanceof Error ? error.message : String(error)
+        })
       }
     }
-    
+
     res.json({
-      message: `${successCount}개 동기화 재시도 완료, ${errorCount}개 실패`,
-      retried_count: successCount,
-      error_count: errorCount,
-      total_attempted: recordsToRetry.length
+      message: `${product_ids.length}개 상품의 동기화를 시작했습니다`,
+      results: syncResults,
+      mode: mode
     })
-    
+
   } catch (error) {
+    console.error('Failed to start product sync:', error)
     res.status(500).json({
-      message: "동기화 재시도 중 오류 발생", 
-      error: error.message
+      error: "상품 동기화 시작에 실패했습니다",
+      details: error instanceof Error ? error.message : String(error)
     })
   }
-} 
+}

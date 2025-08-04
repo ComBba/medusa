@@ -84,60 +84,35 @@ export const ProductSyncTable = ({ marketplaceId }: ProductSyncTableProps) => {
       if (marketplaceId) params.append('marketplace_id', marketplaceId)
       if (statusFilter !== 'all') params.append('status', statusFilter)
       
-      // const response = await amazonSyncClient.getSyncRecords(params.toString())
-      
-      // Mock data for demo purposes
-      const mockData = {
-        sync_records: Array.from({ length: Math.min(pageSize, 45) }, (_, i) => ({
-          id: `sync_${i + (page - 1) * pageSize}`,
-          medusa_product_id: `prod_${i + (page - 1) * pageSize}`,
-          amazon_marketplace_id: marketplaceId || 'ATVPDKIKX0DER',
-          amazon_asin: Math.random() > 0.3 ? `B0${Math.random().toString(36).substr(2, 8).toUpperCase()}` : undefined,
-          amazon_sku: `SKU-${i + (page - 1) * pageSize}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
-          amazon_listing_id: Math.random() > 0.4 ? `listing_${Math.random().toString(36).substr(2, 8)}` : undefined,
-          sync_status: ['pending', 'processing', 'completed', 'failed'][Math.floor(Math.random() * 4)] as any,
-          last_sync_at: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-          sync_attempts: Math.floor(Math.random() * 3),
-          max_attempts: 3,
-          error_message: Math.random() > 0.7 ? "Rate limit exceeded" : undefined,
-          error_code: Math.random() > 0.7 ? "RATE_LIMIT" : undefined,
-          feed_submission_id: Math.random() > 0.5 ? `feed_${Math.random().toString(36).substr(2, 8)}` : undefined,
-          processing_status: Math.random() > 0.6 ? "IN_PROGRESS" : "DONE",
-          created_at: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000).toISOString(),
-          
-          product: {
-            id: `prod_${i + (page - 1) * pageSize}`,
-            title: [
-              "Premium K-Beauty Serum",
-              "Hydrating Face Mask",
-              "Anti-Aging Cream",
-              "Vitamin C Essence",
-              "Collagen Booster",
-              "Retinol Night Cream",
-              "Hyaluronic Acid Toner",
-              "Niacinamide Serum"
-            ][i % 8],
-            thumbnail: `https://picsum.photos/seed/${i}/100/100`,
-            handle: `product-${i + (page - 1) * pageSize}`
-          },
-          marketplace: {
-            id: marketplaceId || 'ATVPDKIKX0DER',
-            name: 'Amazon.com',
-            country_code: 'US',
-            marketplace_id: 'ATVPDKIKX0DER'
-          }
-        })),
-        pagination: {
-          total: 45,
-          limit: pageSize,
-          offset: (page - 1) * pageSize,
-          has_more: page * pageSize < 45
-        }
+      // 실제 Amazon 동기화 API 호출
+      console.log('🔄 [SYNC API] 동기화 레코드 조회 중...', {
+        params: params.toString(),
+        pageSize,
+        page,
+        marketplaceId,
+        statusFilter
+      })
+
+      const response = await amazonSyncClient.getSyncRecords(params.toString()) as {
+        sync_records?: ProductSyncRecord[]
+        pagination?: { total: number }
       }
       
-      setSyncRecords(mockData.sync_records)
-      setTotalRecords(mockData.pagination.total)
+      if (response && response.sync_records) {
+        setSyncRecords(response.sync_records)
+        setTotalRecords(response.pagination?.total || 0)
+        
+        console.log('✅ [SYNC API] 동기화 레코드 조회 성공:', {
+          count: response.sync_records.length,
+          total: response.pagination?.total
+        })
+      } else {
+        // API 응답이 없는 경우 빈 배열 설정
+        setSyncRecords([])
+        setTotalRecords(0)
+        
+        console.log('⚠️ [SYNC API] 동기화 레코드가 없습니다')
+      }
       
     } catch (error) {
       console.error('Failed to fetch sync records:', error)
