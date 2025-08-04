@@ -101,6 +101,43 @@ class AmazonIntegrationModuleService extends MedusaService({
   async deleteProductSync(id: string) {
     return await this.deleteAmazonProductSyncs({ id })
   }
+
+  /**
+   * 마켓플레이스 생성 (편의 메서드)
+   */
+  async createMarketplace(data: any) {
+    return await this.createAmazonMarketplaces(data)
+  }
+
+  /**
+   * 마켓플레이스 업데이트 (편의 메서드)
+   * Medusa v2 Framework의 올바른 update 패턴 사용
+   */
+  async updateMarketplace(id: string, data: any) {
+    // 먼저 기존 엔티티를 조회
+    const existingMarketplaces = await this.listAmazonMarketplaces({ id })
+    
+    if (existingMarketplaces.length === 0) {
+      throw new Error(`마켓플레이스를 찾을 수 없습니다: ${id}`)
+    }
+    
+    // Medusa v2의 올바른 배열 기반 update 패턴 사용
+    const updated = await this.updateAmazonMarketplaces([
+      {
+        selector: { id }, // 업데이트할 엔티티 선택자
+        data: data        // 업데이트할 데이터
+      }
+    ])
+    
+    return updated
+  }
+
+  /**
+   * 마켓플레이스 삭제 (편의 메서드)
+   */
+  async deleteMarketplace(id: string) {
+    return await this.deleteAmazonMarketplaces({ id })
+  }
 }
 
 export default AmazonIntegrationModuleService 

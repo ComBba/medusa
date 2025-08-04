@@ -81,19 +81,48 @@ export const POST = async (
       })
     }
     
+    // 업데이트 데이터 준비
+    const updateData: any = {}
+    
+    if (seller_id !== undefined) {
+      updateData.seller_id = seller_id
+    }
+    if (mws_auth_token !== undefined) {
+      updateData.mws_auth_token = mws_auth_token
+    }
+    if (is_active !== undefined) {
+      updateData.is_active = is_active
+    }
+    if (auto_sync !== undefined) {
+      updateData.auto_sync = auto_sync
+    }
+    
+    console.log('🔄 [API] Updating marketplace:', id, updateData)
+    
+    // 업데이트 전 상태 확인
+    const beforeUpdate = await amazonService.listAmazonMarketplaces({ id })
+    console.log('📋 [API] Before update:', beforeUpdate[0] || 'Not found')
+    
     // 업데이트
-    const updated = await amazonService.updateAmazonMarketplaces(
-      { id },
-      {
-        ...(seller_id !== undefined && { seller_id }),
-        ...(mws_auth_token !== undefined && { mws_auth_token }),
-        ...(is_active !== undefined && { is_active }),
-        ...(auto_sync !== undefined && { auto_sync }),
-      }
-    )
+    const updated = await amazonService.updateMarketplace(id, updateData)
+    
+    console.log('✅ [API] Update result:', updated)
+    
+    // 업데이트 후 상태 재확인
+    const afterUpdate = await amazonService.listAmazonMarketplaces({ id })
+    console.log('🔍 [API] After update:', afterUpdate[0] || 'Not found')
+    
+    // 변경사항 비교
+    if (beforeUpdate[0] && afterUpdate[0]) {
+      console.log('🔄 [API] Changes detected:', {
+        is_active: `${beforeUpdate[0].is_active} → ${afterUpdate[0].is_active}`,
+        seller_id: `${beforeUpdate[0].seller_id} → ${afterUpdate[0].seller_id}`,
+        auto_sync: `${beforeUpdate[0].auto_sync} → ${afterUpdate[0].auto_sync}`
+      })
+    }
     
     res.json({
-      marketplace: updated[0],
+      marketplace: Array.isArray(updated) ? updated[0] : updated,
       message: "마켓플레이스가 업데이트되었습니다"
     })
     

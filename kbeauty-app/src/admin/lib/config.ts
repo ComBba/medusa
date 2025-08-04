@@ -5,7 +5,7 @@ import Medusa from "@medusajs/js-sdk"
  * Amazon 통합 시스템에서 사용하는 클라이언트 설정
  */
 export const sdk = new Medusa({
-  baseUrl: import.meta.env.VITE_BACKEND_URL || "/",
+  baseUrl: import.meta.env.VITE_MEDUSA_BACKEND_URL || import.meta.env.VITE_BACKEND_URL || "http://localhost:10000",
   debug: import.meta.env.DEV,
   auth: {
     type: "session"
@@ -48,10 +48,22 @@ export class AmazonSyncClient {
     auto_sync?: boolean
   }) {
     try {
+      // API 엔드포인트가 기대하는 필드명으로 변환
+      const requestData = {
+        seller_id: data.seller_id,
+        mws_auth_token: data.mws_token, // mws_token -> mws_auth_token 변환
+        is_active: data.is_active,
+        auto_sync: data.auto_sync,
+      }
+      
+      console.log('Updating marketplace:', marketplaceId, requestData)
+      
       const response = await this.sdk.client.fetch(`/admin/amazon/marketplaces/${marketplaceId}`, {
         method: "POST",
-        body: data,
+        body: requestData,
       })
+      
+      console.log('Update marketplace response:', response)
       return response
     } catch (error) {
       console.error(`Failed to update marketplace ${marketplaceId}:`, error)
@@ -62,11 +74,18 @@ export class AmazonSyncClient {
   /**
    * Amazon SP-API 연결 테스트 (표준 Medusa v2 패턴)
    */
-  async testConnection(marketplaceId: string) {
+  async testConnection(marketplaceId: string, sellerId?: string) {
     try {
+      const requestBody: any = { marketplace_id: marketplaceId }
+      if (sellerId) {
+        requestBody.seller_id = sellerId
+      }
+      
+      console.log('Testing connection with:', requestBody)
+      
       const response = await this.sdk.client.fetch("/admin/amazon/test-connection", {
         method: "POST",
-        body: { marketplace_id: marketplaceId },
+        body: requestBody,
       })
       return response
     } catch (error) {

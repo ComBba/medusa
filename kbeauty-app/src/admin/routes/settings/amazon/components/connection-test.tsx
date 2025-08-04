@@ -33,9 +33,19 @@ export const ConnectionTest = ({ marketplace }: ConnectionTestProps) => {
   const [testing, setTesting] = useState(false)
   const [testResults, setTestResults] = useState<TestResult[]>([])
   const [lastTestTime, setLastTestTime] = useState<Date | null>(null)
+  
+  // 환경변수 기본값 포함한 실제 seller_id 확인
+  const getEffectiveSellerID = () => {
+    if (marketplace.seller_id) {
+      return marketplace.seller_id
+    }
+    return import.meta.env.VITE_AMAZON_SELLER_ID || null
+  }
+  
+  const effectiveSellerID = getEffectiveSellerID()
 
   const runConnectionTest = async () => {
-    if (!marketplace.seller_id) {
+    if (!effectiveSellerID) {
       toast.error("먼저 Seller ID를 설정해주세요.")
       return
     }
@@ -44,22 +54,9 @@ export const ConnectionTest = ({ marketplace }: ConnectionTestProps) => {
       setTesting(true)
       setTestResults([])
       
-              const response = await fetch('https://api.kbeauty.market/admin/amazon/test-connection', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('medusa_admin_token') || ''}`,
-        },
-        body: JSON.stringify({
-          marketplace_id: marketplace.marketplace_id,
-          seller_id: marketplace.seller_id
-        })
-      })
+              const data = await amazonSyncClient.testConnection(marketplace.marketplace_id, effectiveSellerID)
 
-      const data = await response.json()
-
-      if (response.ok) {
+      if (data.success) {
         setTestResults(data.results || [
           {
             status: 'success',
@@ -87,10 +84,10 @@ export const ConnectionTest = ({ marketplace }: ConnectionTestProps) => {
             details: 'SP-API connection test is not yet implemented (development mode)'
           },
           {
-            status: marketplace.seller_id ? 'success' : 'error',
+            status: effectiveSellerID ? 'success' : 'error',
             message: 'Seller ID Validation',
-            details: marketplace.seller_id 
-              ? `Seller ID (${marketplace.seller_id}) is configured`
+            details: effectiveSellerID 
+              ? `Seller ID (${effectiveSellerID}) is configured ${!marketplace.seller_id ? '(from environment variable)' : ''}`
               : 'Seller ID is missing'
           }
         ]
@@ -154,7 +151,7 @@ export const ConnectionTest = ({ marketplace }: ConnectionTestProps) => {
           variant="secondary"
           size="small"
           onClick={runConnectionTest}
-          disabled={testing || !marketplace.seller_id}
+          disabled={testing || !effectiveSellerID}
           isLoading={testing}
         >
           {testing ? (
@@ -168,10 +165,19 @@ export const ConnectionTest = ({ marketplace }: ConnectionTestProps) => {
         </Button>
       </div>
 
-      {!marketplace.seller_id && (
+      {!effectiveSellerID && (
         <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg mb-4">
-          <Text className="text-sm text-orange-700">
-            ⚠️ Seller ID가 설정되지 않았습니다. 연결 테스트를 실행하려면 먼저 마켓플레이스 설정을 완료해주세요.
+          <Text as="span" className="text-sm text-orange-700">
+            ⚠️ Seller ID가 설정되지 않았습니다. 연결 테스트를 실행하려면 먼저 마켓플레이스 설정을 완료하거나 환경변수(VITE_AMAZON_SELLER_ID)를 설정해주세요.
+          </Text>
+        </div>
+      )}
+      
+      {effectiveSellerID && !marketplace.seller_id && (
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mb-4">
+          <Text as="span" className="text-sm text-blue-700">
+            ℹ️ 환경변수 기본값을 사용하고 있습니다: {effectiveSellerID.substring(0, 6)}... 
+            <br />영구 저장하려면 마켓플레이스를 편집하여 Seller ID를 저장하세요.
           </Text>
         </div>
       )}

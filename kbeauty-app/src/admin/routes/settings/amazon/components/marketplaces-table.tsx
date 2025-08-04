@@ -39,7 +39,28 @@ export const AmazonMarketplacesTable = ({ onMarketplaceSelect }: AmazonMarketpla
     try {
       setLoading(true)
       const data = await amazonSyncClient.getMarketplaces() as any
-      setMarketplaces(data.marketplaces || [])
+      const marketplacesList = data.marketplaces || []
+      
+      // 환경변수 기본값으로 seller_id 보완
+      const envSellerID = import.meta.env.VITE_AMAZON_SELLER_ID
+      const enhancedMarketplaces = marketplacesList.map((mp: AmazonMarketplace) => ({
+        ...mp,
+        // DB에 저장된 값이 없고 환경변수 기본값이 있으면 사용
+        seller_id: mp.seller_id || envSellerID || null,
+        // 환경변수로 seller_id가 보완되었는지 표시
+        _has_env_seller_id: !mp.seller_id && !!envSellerID
+      }))
+      
+      console.log('📥 [FETCH] Fetched marketplaces:', {
+        timestamp: new Date().toISOString(),
+        count: marketplacesList.length,
+        envSellerID,
+        raw: marketplacesList,
+        enhanced: enhancedMarketplaces,
+        usMarketplace: enhancedMarketplaces.find(mp => mp.marketplace_id === 'ATVPDKIKX0DER')
+      })
+      
+      setMarketplaces(enhancedMarketplaces)
     } catch (error) {
       console.error('Error fetching marketplaces:', error)
       toast.error("마켓플레이스 목록을 불러올 수 없습니다.")
@@ -53,18 +74,83 @@ export const AmazonMarketplacesTable = ({ onMarketplaceSelect }: AmazonMarketpla
     try {
       setUpdating(marketplace.id)
       
-      await amazonSyncClient.updateMarketplace(marketplace.id, {
+      // 환경변수 기본값 고려한 seller_id 결정
+      const envSellerID = import.meta.env.VITE_AMAZON_SELLER_ID
+      const effectiveSellerID = marketplace.seller_id || envSellerID
+      
+      const updateData: any = {
         is_active: !marketplace.is_active,
         auto_sync: marketplace.auto_sync,
-        seller_id: marketplace.seller_id
+      }
+      
+      // Seller ID가 있으면 포함 (환경변수 기본값 포함)
+      if (effectiveSellerID) {
+        updateData.seller_id = effectiveSellerID
+      }
+      
+      console.log('🔄 [TOGGLE] Before API call:', {
+        marketplaceId: marketplace.id,
+        marketplaceName: marketplace.name,
+        currentState: marketplace.is_active,
+        newState: !marketplace.is_active,
+        effectiveSellerID,
+        updateData,
+        timestamp: new Date().toISOString()
       })
+      
+      const result = await amazonSyncClient.updateMarketplace(marketplace.id, updateData)
+      console.log('✅ [TOGGLE] API result:', result)
+      
+      // API 응답의 구조 상세 로깅
+      if (result) {
+        console.log('📊 [TOGGLE] API response structure:', {
+          hasMarketplace: !!result.marketplace,
+          marketplaceData: result.marketplace,
+          fullResponse: result,
+          responseKeys: Object.keys(result || {})
+        })
+        
+        // 마켓플레이스 데이터 상세 로깅
+        if (result.marketplace) {
+          console.log('🔍 [TOGGLE] Marketplace details:', {
+            id: result.marketplace.id,
+            name: result.marketplace.name,
+            is_active: result.marketplace.is_active,
+            seller_id: result.marketplace.seller_id,
+            auto_sync: result.marketplace.auto_sync,
+            marketplace_id: result.marketplace.marketplace_id
+          })
+        }
+      }
+
+      // API 응답에서 업데이트된 마켓플레이스 데이터가 있으면 직접 사용
+      if (result && result.marketplace) {
+        const updatedMarketplace = result.marketplace
+        
+        // 현재 마켓플레이스 목록에서 해당 마켓플레이스 업데이트
+        setMarketplaces(prevMarketplaces => 
+          prevMarketplaces.map(mp => 
+            mp.id === marketplace.id 
+              ? { 
+                  ...mp, 
+                  ...updatedMarketplace,
+                  // 환경변수 기본값 유지
+                  seller_id: updatedMarketplace.seller_id || mp.seller_id,
+                  _has_env_seller_id: !updatedMarketplace.seller_id && !!import.meta.env.VITE_AMAZON_SELLER_ID
+                }
+              : mp
+          )
+        )
+      } else {
+        // fallback: 목록 새로고침
+        await fetchMarketplaces()
+      }
 
       toast.success(
         marketplace.is_active 
           ? `${marketplace.name} 마켓플레이스가 비활성화되었습니다.`
           : `${marketplace.name} 마켓플레이스가 활성화되었습니다.`
       )
-      await fetchMarketplaces() // 목록 새로고침
     } catch (error) {
       console.error('Error updating marketplace:', error)
       toast.error("마켓플레이스 업데이트에 실패했습니다.")
@@ -164,7 +250,16 @@ export const AmazonMarketplacesTable = ({ onMarketplaceSelect }: AmazonMarketpla
                   <Tooltip content={marketplace.is_active ? "Deactivate" : "Activate"}>
                     <Switch
                       checked={marketplace.is_active}
-                      onCheckedChange={() => toggleMarketplace(marketplace)}
+                      onCheckedChange={(checked) => {
+                        console.log('🎯 [SWITCH] Toggle clicked:', {
+                          marketplaceId: marketplace.id,
+                          marketplaceName: marketplace.name,
+                          currentActive: marketplace.is_active,
+                          newChecked: checked,
+                          updating: updating === marketplace.id
+                        })
+                        toggleMarketplace(marketplace)
+                      }}
                       disabled={updating === marketplace.id}
                     />
                   </Tooltip>
@@ -176,6 +271,13 @@ export const AmazonMarketplacesTable = ({ onMarketplaceSelect }: AmazonMarketpla
                     <Tooltip content="Seller ID가 설정되지 않았습니다">
                       <StatusBadge color="orange">
                         Setup Required
+                      </StatusBadge>
+                    </Tooltip>
+                  )}
+                  {(marketplace as any)._has_env_seller_id && (
+                    <Tooltip content="환경변수 기본값 사용 중 (DB에 저장하려면 편집하세요)">
+                      <StatusBadge color="blue">
+                        Env Default
                       </StatusBadge>
                     </Tooltip>
                   )}
