@@ -203,6 +203,41 @@ export class AmazonSyncClient {
       throw error
     }
   }
+
+  /**
+   * 동기화 레코드 목록 조회 (표준 Medusa v2 패턴)
+   */
+  async getSyncRecords(queryParams: string = '') {
+    try {
+      const url = `/admin/amazon/sync${queryParams ? `?${queryParams}` : ''}`
+      const response = await this.sdk.client.fetch(url, {
+        method: "GET",
+      })
+      return response
+    } catch (error) {
+      console.error("Failed to get sync records:", error)
+      throw error
+    }
+  }
+
+  /**
+   * 동기화 재시도 (표준 Medusa v2 패턴)
+   */
+  async retrySync(data: {
+    sync_record_ids?: string[]
+    marketplace_id?: string
+  }) {
+    try {
+      const response = await this.sdk.client.fetch("/admin/amazon/sync", {
+        method: "PUT",
+        body: data,
+      })
+      return response
+    } catch (error) {
+      console.error("Failed to retry sync:", error)
+      throw error
+    }
+  }
 }
 
 /**
