@@ -36,9 +36,12 @@ const createAmazonSyncRecordStep = createStep(
     // 활성화된 마켓플레이스 조회
     const marketplaces = await amazonService.getActiveMarketplaces()
     
-    // 특정 마켓플레이스가 지정된 경우 필터링
+    // 특정 마켓플레이스가 지정된 경우 필터링 (ID 또는 marketplace_id로 매칭)
     const targetMarketplaces = marketplace_ids 
-      ? marketplaces.filter(m => marketplace_ids.includes(m.id))
+      ? marketplaces.filter(m => 
+          marketplace_ids.includes(m.id) ||           // 데이터베이스 ID로 매칭
+          marketplace_ids.includes(m.marketplace_id)  // Amazon 마켓플레이스 ID로 매칭
+        )
       : marketplaces
       
     if (targetMarketplaces.length === 0) {

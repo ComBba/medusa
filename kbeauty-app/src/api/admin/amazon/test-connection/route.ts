@@ -54,11 +54,22 @@ export const POST = async (
     const lwaClientSecret = process.env.AMAZON_LWA_CLIENT_SECRET
     const awsAccessKey = process.env.AMAZON_AWS_ACCESS_KEY_ID
     const awsSecretKey = process.env.AMAZON_AWS_SECRET_ACCESS_KEY
+    const isSandbox = process.env.AMAZON_SP_API_SANDBOX === 'true'
 
-    if (!lwaClientId || !lwaClientSecret || !awsAccessKey || !awsSecretKey) {
-      envCheck.status = 'error'
-      envCheck.message = 'Environment Configuration Error'
-      envCheck.details = 'Missing required Amazon SP-API credentials in environment variables'
+    // LWA 자격 증명은 항상 필요
+    const hasLwaCredentials = lwaClientId && lwaClientSecret && 
+      !lwaClientId.startsWith('your-') && !lwaClientSecret.startsWith('your-')
+    
+    // AWS 자격 증명은 샌드박스에서는 선택적
+    const hasAwsCredentials = awsAccessKey && awsSecretKey && 
+      !awsAccessKey.startsWith('your-') && !awsSecretKey.startsWith('your-')
+
+    if (!hasLwaCredentials || (!isSandbox && !hasAwsCredentials)) {
+      envCheck.status = isSandbox ? 'warning' : 'error'
+      envCheck.message = isSandbox ? 'Environment Configuration (Sandbox)' : 'Environment Configuration Error'
+      envCheck.details = isSandbox 
+        ? 'LWA credentials configured, AWS credentials optional in sandbox mode'
+        : 'Missing required Amazon SP-API credentials in environment variables'
     }
 
     testResults.push(envCheck)

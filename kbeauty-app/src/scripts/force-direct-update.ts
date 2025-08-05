@@ -1,6 +1,5 @@
-import { ExecArgs } from "@medusajs/medusa"
+import { ExecArgs } from "@medusajs/framework/types"
 import { AMAZON_INTEGRATION_MODULE } from "../modules/amazon-integration"
-import { AmazonIntegrationModuleService } from "../modules/amazon-integration"
 
 /**
  * 직접 데이터베이스 업데이트로 마켓플레이스 강제 활성화
@@ -10,7 +9,7 @@ import { AmazonIntegrationModuleService } from "../modules/amazon-integration"
  */
 export default async function forceDirectUpdate({ container }: ExecArgs) {
   const logger = container.resolve("logger")
-  const amazonService: AmazonIntegrationModuleService = container.resolve(AMAZON_INTEGRATION_MODULE)
+  const amazonService = container.resolve(AMAZON_INTEGRATION_MODULE)
   
   try {
     logger.info("🔧 강제 직접 업데이트 시작...")
@@ -40,7 +39,7 @@ export default async function forceDirectUpdate({ container }: ExecArgs) {
           auto_sync: true
         }
       )
-      logger.info("✅ 방법 1 결과:", result1)
+      logger.info("✅ 방법 1 결과: " + JSON.stringify(result1, null, 2))
     } catch (error) {
       logger.error("❌ 방법 1 실패:", error.message)
     }
@@ -65,7 +64,7 @@ export default async function forceDirectUpdate({ container }: ExecArgs) {
           auto_sync: true
         }
       )
-      logger.info("✅ 방법 2 결과:", result2)
+      logger.info("✅ 방법 2 결과: " + JSON.stringify(result2, null, 2))
     } catch (error) {
       logger.error("❌ 방법 2 실패:", error.message)
     }
@@ -93,7 +92,7 @@ export default async function forceDirectUpdate({ container }: ExecArgs) {
       logger.info("🔍 디버깅 정보:")
       logger.info(`   - 마켓플레이스 ID: ${finalMarketplace?.id}`)
       logger.info(`   - 마켓플레이스 객체 키들: ${Object.keys(finalMarketplace || {}).join(', ')}`)
-      logger.info(`   - 전체 객체:`, finalMarketplace)
+      logger.info(`   - 전체 객체: ${JSON.stringify(finalMarketplace, null, 2)}`)
     }
     
   } catch (error) {

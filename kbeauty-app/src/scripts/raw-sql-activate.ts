@@ -11,7 +11,7 @@ export default async function rawSqlActivate({ container }: ExecArgs) {
 
   try {
     // MikroORM EntityManager 가져오기
-    const em = container.resolve("manager")
+    const em = container.resolve("manager") as any
     
     if (!em) {
       logger.error("❌ EntityManager를 찾을 수 없습니다.")

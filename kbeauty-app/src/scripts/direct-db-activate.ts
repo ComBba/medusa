@@ -13,7 +13,7 @@ export default async function directDbActivate({ container }: ExecArgs) {
 
   try {
     // 데이터베이스 연결 가져오기
-    const dbConnection = container.resolve("dbConnection")
+    const dbConnection = container.resolve("db_connection") as any
     
     if (!dbConnection) {
       logger.error("❌ 데이터베이스 연결을 찾을 수 없습니다.")
@@ -113,16 +113,20 @@ export default async function directDbActivate({ container }: ExecArgs) {
     logger.info("🔄 대안 방법 시도...")
     
     try {
-      const { AMAZON_INTEGRATION_MODULE } = await import("../modules/amazon-integration")
+      const { AMAZON_INTEGRATION_MODULE } = await import("../modules/amazon-integration/index.js")
       const amazonService = container.resolve(AMAZON_INTEGRATION_MODULE)
       
-      // 강제 flush 시도
-      const em = amazonService.em_
-      if (em) {
-        logger.info("📊 EntityManager flush 시도...")
-        await em.flush()
-        logger.info("✅ EntityManager flush 완료")
-      }
+      // 서비스 메서드로 업데이트 시도
+      logger.info("📊 서비스 메서드를 통한 강제 업데이트 시도")
+      const updated = await amazonService.updateAmazonMarketplaces(
+        { marketplace_id: 'ATVPDKIKX0DER' },
+        {
+          is_active: true,
+          seller_id: process.env.AMAZON_SELLER_ID || 'A29WXO3VK3FMZ1',
+          auto_sync: true
+        }
+      )
+      logger.info("✅ 서비스 메서드 업데이트 완료")
       
     } catch (altError) {
       logger.error(`❌ 대안 방법 실패: ${altError.message}`)

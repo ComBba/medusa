@@ -67,16 +67,19 @@ export default async function simpleSandboxTest({ container }: ExecArgs) {
         input: {
           product,
           marketplace_ids: [usMarketplace.marketplace_id],
-          sync_type: 'full',
-          force: false
+          options: {
+            force_update: false
+          }
         }
       })
 
       logger.info("📊 동기화 결과:")
       logger.info(`   - 상품 ID: ${result.product_id}`)
       logger.info(`   - 처리된 마켓플레이스: ${result.total_marketplaces}개`)
-      logger.info(`   - 성공한 동기화: ${result.successful_syncs}개`)
-      logger.info(`   - 실패한 동기화: ${result.failed_syncs}개`)
+      const successCount = result.sync_results?.filter((r: any) => r.success).length || 0
+      const failedCount = result.sync_results?.filter((r: any) => !r.success).length || 0
+      logger.info(`   - 성공한 동기화: ${successCount}개`)
+      logger.info(`   - 실패한 동기화: ${failedCount}개`)
 
       if (result.sync_results && result.sync_results.length > 0) {
         result.sync_results.forEach((syncResult: any, index: number) => {

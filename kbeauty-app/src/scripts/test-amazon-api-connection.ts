@@ -39,48 +39,71 @@ export default async function testAmazonApiConnection({ container }: ExecArgs) {
       logger.warn('⚠️ 미국 마켓플레이스를 찾을 수 없습니다.')
     }
 
-    // 환경 변수 확인
-    logger.info('🔧 2단계: Amazon SP-API 자격 증명 확인')
-    
-    const requiredEnvVars = [
-      'AMAZON_LWA_CLIENT_ID',
-      'AMAZON_LWA_CLIENT_SECRET', 
-      'AMAZON_LWA_REFRESH_TOKEN',
-      'AMAZON_AWS_ACCESS_KEY_ID',
-      'AMAZON_AWS_SECRET_ACCESS_KEY',
-      'AMAZON_SELLER_ID'
-    ]
+      // 환경 변수 확인 (샌드박스 모드 고려)
+  logger.info('🔧 2단계: Amazon SP-API 자격 증명 확인')
+  
+  const isSandbox = process.env.AMAZON_SP_API_SANDBOX === 'true'
+  
+  const lwaVars = ['AMAZON_LWA_CLIENT_ID', 'AMAZON_LWA_CLIENT_SECRET', 'AMAZON_LWA_REFRESH_TOKEN']
+  const awsVars = ['AMAZON_AWS_ACCESS_KEY_ID', 'AMAZON_AWS_SECRET_ACCESS_KEY']
+  const otherVars = ['AMAZON_SELLER_ID']
 
-    const missingVars = requiredEnvVars.filter(varName => {
-      const value = process.env[varName]
-      return !value || value.startsWith('your-')
+  const missingLwaVars = lwaVars.filter(varName => {
+    const value = process.env[varName]
+    return !value || value.startsWith('your-')
+  })
+
+  const missingAwsVars = awsVars.filter(varName => {
+    const value = process.env[varName]
+    return !value || value.startsWith('your-')
+  })
+
+  const missingOtherVars = otherVars.filter(varName => {
+    const value = process.env[varName]
+    return !value || value.startsWith('your-')
+  })
+
+  // LWA 자격 증명 확인
+  if (missingLwaVars.length > 0) {
+    logger.warn('⚠️ LWA 자격 증명이 설정되지 않았습니다:')
+    missingLwaVars.forEach(varName => {
+      logger.warn(`   - ${varName}`)
     })
+  } else {
+    logger.info('✅ LWA 자격 증명이 설정되었습니다.')
+  }
 
-    if (missingVars.length > 0) {
-      logger.warn('⚠️ 다음 환경 변수가 설정되지 않았습니다:')
-      missingVars.forEach(varName => {
+  // AWS 자격 증명 확인 (샌드박스에서는 선택적)
+  if (missingAwsVars.length > 0) {
+    if (isSandbox) {
+      logger.info('ℹ️ AWS 자격 증명이 없지만 샌드박스 모드에서는 모의 테스트가 가능합니다.')
+    } else {
+      logger.warn('⚠️ AWS 자격 증명이 설정되지 않았습니다:')
+      missingAwsVars.forEach(varName => {
         logger.warn(`   - ${varName}`)
       })
-      logger.info('📝 실제 Amazon SP-API 자격 증명을 .env 파일에 설정하세요.')
-      logger.info('🧪 현재는 샌드박스 모드로 모의 테스트를 진행합니다.')
-    } else {
-      logger.info('✅ 모든 필수 환경 변수가 설정되었습니다.')
     }
+  } else {
+    logger.info('✅ AWS 자격 증명이 설정되었습니다.')
+  }
 
-    // 샌드박스 환경 확인
-    logger.info('🧪 3단계: 샌드박스 환경 확인')
-    const isSandbox = process.env.AMAZON_SP_API_SANDBOX === 'true'
-    logger.info(`📋 샌드박스 모드: ${isSandbox ? '활성화됨' : '비활성화됨'}`)
+  // 기타 설정 확인
+  if (missingOtherVars.length > 0) {
+    logger.warn('⚠️ 기타 필수 설정이 누락되었습니다:')
+    missingOtherVars.forEach(varName => {
+      logger.warn(`   - ${varName}`)
+    })
+  } else {
+    logger.info('✅ 기타 설정이 완료되었습니다.')
+  }
 
-    if (isSandbox) {
-      logger.info('✅ 샌드박스 환경에서 안전하게 테스트합니다.')
-    } else {
-      logger.warn('⚠️ 프로덕션 환경입니다. 신중하게 진행하세요.')
-    }
+  const allMissingVars = [...missingLwaVars, ...missingOtherVars, ...(isSandbox ? [] : missingAwsVars)]
 
-    // 모의 API 호출 테스트 (실제 자격 증명이 없는 경우)
-    if (missingVars.length > 0) {
-      logger.info('🎭 4단계: 모의 API 연결 테스트')
+    // 샌드박스 환경 확인은 위에서 이미 완료됨
+
+  // 모의 API 호출 테스트 (실제 자격 증명이 없는 경우)
+  if (allMissingVars.length > 0) {
+    logger.info('🎭 4단계: 모의 API 연결 테스트')
       
       const mockResponse = {
         connection_status: 'success',
@@ -138,14 +161,16 @@ export default async function testAmazonApiConnection({ container }: ExecArgs) {
     // 결과 요약
     logger.info('🎉 6단계: 테스트 결과 요약')
     
-    const testResults = {
-      module_loaded: true,
-      marketplace_activated: activeMarketplaces.length > 0,
-      credentials_configured: missingVars.length === 0,
-      sandbox_mode: isSandbox,
-      api_connection: missingVars.length === 0 ? 'ready' : 'mock_only',
-      overall_status: 'ready_for_development'
-    }
+      const testResults = {
+    module_loaded: true,
+    marketplace_activated: activeMarketplaces.length > 0,
+    credentials_configured: allMissingVars.length === 0,
+    sandbox_mode: isSandbox,
+    api_connection: allMissingVars.length === 0 ? 'ready' : 'mock_only',
+    overall_status: allMissingVars.length === 0 
+      ? (isSandbox ? 'ready_for_sandbox' : 'ready_for_production')
+      : 'ready_for_development'
+  }
 
     logger.info('📋 테스트 결과:')
     Object.entries(testResults).forEach(([key, value]) => {

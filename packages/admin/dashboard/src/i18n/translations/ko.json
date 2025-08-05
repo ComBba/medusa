@@ -538,17 +538,21 @@
     },
     "fields": {
       "title": {
+        "placeholder": "제품",
         "label": "제목",
         "hint": "제품에 간결하고 명확한 제목을 부여하세요.<0/>검색 엔진에 권장되는 길이는 50-60자입니다."
       },
       "subtitle": {
+        "placeholder": "부제목",
         "label": "부제목"
       },
       "handle": {
+        "placeholder": "핸들",
         "label": "핸들",
         "tooltip": "핸들은 스토어프론트에서 제품을 참조하는 데 사용됩니다. 지정하지 않으면 제품 제목에서 핸들이 생성됩니다."
       },
       "description": {
+        "placeholder": "설명",
         "label": "설명",
         "hint": "제품에 간결하고 명확한 설명을 제공하세요.<0/>검색 엔진에 권장되는 길이는 120-160자입니다."
       },
@@ -804,6 +808,7 @@
     }
   },
   "inventory": {
+    "quantityAcrossLocations": "위치별 재고 수량",
     "domain": "재고",
     "subtitle": "재고 항목 관리",
     "reserved": "예약됨",
@@ -1048,6 +1053,7 @@
       "newOwnerDescription": "이 주문을 이전할 고객입니다."
     },
     "payment": {
+      "totalStoreCreditRefunds": "총 스토어 크레딧 환불",
       "title": "결제",
       "isReadyToBeCaptured": "결제 <0/>가 캡처 준비되었습니다.",
       "totalPaidByCustomer": "고객 결제 총액",
@@ -1701,6 +1707,14 @@
     }
   },
   "taxRegions": {
+    "provider": {
+      "header": "이행 제공자"
+    },
+    "edit": {
+      "header": "세금 지역 편집",
+      "successToast": "세금 지역이 성공적으로 업데이트되었습니다.",
+      "hint": "세금 지역을 편집하세요."
+    },
     "domain": "세금 지역",
     "list": {
       "hint": "고객이 다른 국가 및 지역에서 쇼핑할 때 부과하는 세금을 관리합니다."
@@ -1713,8 +1727,8 @@
       "header": "세금 지역 생성",
       "hint": "특정 국가에 대한 세율을 정의하기 위한 새 세금 지역을 생성합니다.",
       "errors": {
-        "rateIsRequired": "기본 세율 생성 시 세율은 필수입니다.",
-        "nameIsRequired": "기본 세율 생성 시 이름은 필수입니다."
+        "missingCountry": "국가는 필수입니다.",
+        "missingProvider": "이행 제공자는 필수입니다."
       },
       "successToast": "세금 지역이 성공적으로 생성되었습니다."
     },
@@ -1837,6 +1851,7 @@
       }
     },
     "fields": {
+      "taxProvider": "이행 제공자",
       "isCombinable": {
         "label": "결합 가능",
         "hint": "이 세율이 세금 지역의 기본 세율과 결합될 수 있는지 여부입니다.",
@@ -1947,6 +1962,7 @@
       "campaign": "캠페인"
     },
     "fields": {
+      "taxInclusive": "세금 포함",
       "type": "유형",
       "value_type": "값 유형",
       "value": "값",
@@ -2010,6 +2026,10 @@
       "tooltip": "이것은 프로모션의 통화입니다. 상세 정보 탭에서 변경하세요."
     },
     "form": {
+      "taxInclusive": {
+        "description": "이 프로모션의 가격은 세금을 포함하여 계산됩니다.",
+        "title": "세금 포함"
+      },
       "required": "필수",
       "and": "그리고",
       "selectAttribute": "속성 선택",
@@ -2466,7 +2486,6 @@
       "createTaxRate": "세율 생성",
       "createTaxRateHint": "지역에 대한 새 세율을 생성합니다.",
       "deleteRateDescription": "세율 {{name}}을(를) 삭제하려고 합니다. 이 작업은 되돌릴 수 없습니다.",
-      "editTaxRate": "세율 편집",
       "editRateAction": "세율 편집",
       "editOverridesAction": "재정의 편집",
       "editOverridesTitle": "세율 재정의 편집",

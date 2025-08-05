@@ -1,6 +1,6 @@
 import { ExecArgs } from "@medusajs/framework/types"
 import { AMAZON_INTEGRATION_MODULE } from "../modules/amazon-integration"
-import AmazonIntegrationModuleService from "../modules/amazon-integration/service"
+// import AmazonIntegrationModuleService from "../modules/amazon-integration/service"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 
 /**
@@ -14,7 +14,7 @@ import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
  */
 export default async function setupAmazonSandbox({ container }: ExecArgs) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
-  const amazonService: AmazonIntegrationModuleService = container.resolve(AMAZON_INTEGRATION_MODULE)
+  const amazonService = container.resolve(AMAZON_INTEGRATION_MODULE)
 
   logger.info("🧪 Amazon 샌드박스 환경 설정 시작...")
 
@@ -92,7 +92,7 @@ export default async function setupAmazonSandbox({ container }: ExecArgs) {
       if (existing.length > 0) {
         // 기존 마켓플레이스 업데이트 (샌드박스 설정으로)
         const marketplace = existing[0]
-        await amazonService.updateAmazonMarketplaces([marketplace.id], {
+        await amazonService.updateAmazonMarketplaces({ id: marketplace.id }, {
           seller_id: marketplaceData.seller_id,
           is_active: marketplaceData.is_active,
           auto_sync: marketplaceData.auto_sync,

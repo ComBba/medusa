@@ -1,6 +1,6 @@
 import { ExecArgs } from "@medusajs/framework/types"
 import { AMAZON_INTEGRATION_MODULE } from "../modules/amazon-integration"
-import AmazonIntegrationModuleService from "../modules/amazon-integration/service"
+// import AmazonIntegrationModuleService from "../modules/amazon-integration/service"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 
 /**
@@ -13,7 +13,7 @@ import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
  */
 export default async function testAmazonSandbox({ container }: ExecArgs) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
-  const amazonService: AmazonIntegrationModuleService = container.resolve(AMAZON_INTEGRATION_MODULE)
+  const amazonService = container.resolve(AMAZON_INTEGRATION_MODULE)
 
   logger.info('🧪 Amazon 샌드박스 통합 테스트 시작')
 

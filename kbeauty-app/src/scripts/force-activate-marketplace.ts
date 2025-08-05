@@ -36,64 +36,36 @@ export default async function forceActivateMarketplace({ container }: ExecArgs) 
     // 데이터베이스 직접 업데이트 시도
     logger.info("🔄 데이터베이스 직접 업데이트 시도...")
     
-    // Repository 접근
-    const amazonRepository = amazonService.amazonMarketplaceRepository_
-
-    if (amazonRepository) {
-      logger.info("📊 Repository 접근 성공")
+    // 서비스 메서드를 통한 업데이트 시도
+    logger.info("🔄 서비스 메서드를 통한 업데이트 시도...")
+    
+    try {
+      const updated = await amazonService.updateAmazonMarketplaces(
+        { id: usMarketplace.id }, 
+        {
+          is_active: true,
+          auto_sync: true,
+          seller_id: process.env.AMAZON_SELLER_ID || 'A29WXO3VK3FMZ1'
+        }
+      )
       
-      // 직접 업데이트
-      const updateData = {
-        is_active: true,
-        auto_sync: true,
-        seller_id: process.env.AMAZON_SELLER_ID || 'A29WXO3VK3FMZ1',
-        updated_at: new Date()
+      if (updated) {
+        logger.info("✅ 서비스 메서드로 업데이트 성공!")
       }
+    } catch (serviceError) {
+      logger.error(`❌ 서비스 메서드 실패: ${serviceError.message}`)
       
-      logger.info("💾 데이터베이스 업데이트 실행...")
-      
+      // 대안: updateMarketplace 메서드 시도
+      logger.info("🔄 updateMarketplace 메서드 시도...")
       try {
-        await amazonRepository.update(usMarketplace.id, updateData)
-        logger.info("✅ 데이터베이스 업데이트 성공!")
-      } catch (updateError) {
-        logger.error(`❌ 직접 업데이트 실패: ${updateError.message}`)
-        
-        // 대안: 조회 후 저장
-        logger.info("🔄 대안 방법 시도...")
-        const marketplace = await amazonRepository.findOne({ 
-          where: { id: usMarketplace.id } 
+        const directUpdate = await amazonService.updateMarketplace(usMarketplace.id, {
+          is_active: true,
+          auto_sync: true,
+          seller_id: process.env.AMAZON_SELLER_ID || 'A29WXO3VK3FMZ1'
         })
-        
-        if (marketplace) {
-          marketplace.is_active = true
-          marketplace.auto_sync = true
-          marketplace.seller_id = process.env.AMAZON_SELLER_ID || 'A29WXO3VK3FMZ1'
-          marketplace.updated_at = new Date()
-          
-          await amazonRepository.save(marketplace)
-          logger.info("✅ 대안 방법으로 업데이트 성공!")
-        }
-      }
-    } else {
-      logger.warn("⚠️ Repository에 직접 접근할 수 없습니다.")
-      logger.info("💡 서비스 메서드를 통한 업데이트 시도...")
-      
-      // 서비스 메서드 시도
-      try {
-        const updated = await amazonService.updateAmazonMarketplaces(
-          { id: usMarketplace.id }, 
-          {
-            is_active: true,
-            auto_sync: true,
-            seller_id: process.env.AMAZON_SELLER_ID || 'A29WXO3VK3FMZ1'
-          }
-        )
-        
-        if (updated) {
-          logger.info("✅ 서비스 메서드로 업데이트 성공!")
-        }
-      } catch (serviceError) {
-        logger.error(`❌ 서비스 메서드 실패: ${serviceError.message}`)
+        logger.info("✅ updateMarketplace 메서드로 업데이트 성공!")
+      } catch (directError) {
+        logger.error(`❌ updateMarketplace 메서드도 실패: ${directError.message}`)
       }
     }
 

@@ -1,6 +1,5 @@
-import { ExecArgs, ContainerRegistrationKeys } from "@medusajs/medusa"
+import { ExecArgs } from "@medusajs/framework/types"
 import { AMAZON_INTEGRATION_MODULE } from "../modules/amazon-integration"
-import { AmazonIntegrationModuleService } from "../modules/amazon-integration"
 
 /**
  * 디버그용 마켓플레이스 토글 테스트
@@ -10,7 +9,7 @@ import { AmazonIntegrationModuleService } from "../modules/amazon-integration"
  */
 export default async function debugMarketplaceToggle({ container }: ExecArgs) {
   const logger = container.resolve("logger")
-  const amazonService: AmazonIntegrationModuleService = container.resolve(AMAZON_INTEGRATION_MODULE)
+  const amazonService = container.resolve(AMAZON_INTEGRATION_MODULE)
   
   try {
     logger.info("🔍 마켓플레이스 디버그 토글 테스트 시작...")
@@ -45,11 +44,11 @@ export default async function debugMarketplaceToggle({ container }: ExecArgs) {
       seller_id: process.env.AMAZON_SELLER_ID || usMarketplace.seller_id || 'A29WXO3VK3FMZ1'
     }
     
-    logger.info("📝 업데이트 데이터:", updateData)
+    logger.info("📝 업데이트 데이터: " + JSON.stringify(updateData, null, 2))
     
     const updated = await amazonService.updateMarketplace(usMarketplace.id, updateData)
     
-    logger.info("✅ 업데이트 결과:", updated)
+    logger.info("✅ 업데이트 결과: " + JSON.stringify(updated, null, 2))
     
     // 5. 업데이트 후 상태 확인
     const updatedMarketplaces = await amazonService.listAmazonMarketplaces({

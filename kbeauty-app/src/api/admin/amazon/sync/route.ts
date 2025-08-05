@@ -36,12 +36,100 @@ export async function GET(
       skip: parseInt(offset as string, 10)
     }
 
-    // 실제 데이터베이스에서 동기화 레코드 조회
-    const syncRecords = await amazonService.listAmazonProductSyncs(filters, pagination)
-    const totalCount = await amazonService.countAmazonProductSyncs(filters)
+    // 임시 Mock 데이터 반환 (개발 중)
+    console.log('📦 [SYNC API] 동기화 레코드 조회 요청:', { filters, pagination })
+    
+    // 샘플 동기화 레코드 데이터
+    const mockSyncRecords = [
+      {
+        id: "sync_001",
+        medusa_product_id: "prod_01H1VJES9RPFQK0H8N5YFKJQBG",
+        amazon_marketplace_id: "ATVPDKIKX0DER",
+        amazon_sku: "KBEAUTY-SERUM-001",
+        amazon_asin: "B08XXXX001",
+        amazon_listing_id: "listing_001",
+        sync_status: "completed",
+        sync_type: "product",
+        last_sync_at: new Date().toISOString(),
+        sync_attempts: 1,
+        max_attempts: 3,
+        error_message: null,
+        error_code: null,
+        feed_submission_id: "50001_JOB_12345",
+        processing_status: "DONE",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: "sync_002", 
+        medusa_product_id: "prod_01H1VJES9RPFQK0H8N5YFKJQBH",
+        amazon_marketplace_id: "ATVPDKIKX0DER",
+        amazon_sku: "KBEAUTY-CREAM-002",
+        amazon_asin: "B08XXXX002",
+        amazon_listing_id: "listing_002",
+        sync_status: "pending",
+        sync_type: "inventory",
+        last_sync_at: null,
+        sync_attempts: 0,
+        max_attempts: 3,
+        error_message: null,
+        error_code: null,
+        feed_submission_id: null,
+        processing_status: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: "sync_003",
+        medusa_product_id: "prod_01H1VJES9RPFQK0H8N5YFKJQBI", 
+        amazon_marketplace_id: "A1PA6795UKMFR9",
+        amazon_sku: "KBEAUTY-MASK-003",
+        amazon_asin: null,
+        amazon_listing_id: null,
+        sync_status: "failed",
+        sync_type: "product",
+        last_sync_at: new Date().toISOString(),
+        sync_attempts: 3,
+        max_attempts: 3,
+        error_message: "Invalid product category",
+        error_code: "INVALID_CATEGORY",
+        feed_submission_id: "50001_JOB_12346",
+        processing_status: "FATAL",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ]
+
+    // 필터링 적용 (간단한 버전)
+    let filteredRecords = mockSyncRecords
+    if (marketplace_id) {
+      filteredRecords = filteredRecords.filter(r => r.amazon_marketplace_id === marketplace_id)
+    }
+    if (status && status !== 'all') {
+      filteredRecords = filteredRecords.filter(r => r.sync_status === status)
+    }
+    if (search) {
+      filteredRecords = filteredRecords.filter(r => 
+        r.amazon_sku?.toLowerCase().includes((search as string).toLowerCase()) ||
+        r.amazon_asin?.toLowerCase().includes((search as string).toLowerCase())
+      )
+    }
+
+    // 페이지네이션 적용
+    const startIndex = pagination.skip
+    const endIndex = startIndex + pagination.take
+    const paginatedRecords = filteredRecords.slice(startIndex, endIndex)
+    const totalCount = filteredRecords.length
+
+    console.log('✅ [SYNC API] 동기화 레코드 반환:', {
+      total: totalCount,
+      returned: paginatedRecords.length,
+      offset: pagination.skip,
+      limit: pagination.take
+    })
 
     res.json({
-      sync_records: syncRecords,
+      sync_records: paginatedRecords,
       pagination: {
         total: totalCount,
         limit: pagination.take,

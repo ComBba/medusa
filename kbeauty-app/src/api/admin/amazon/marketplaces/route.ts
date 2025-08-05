@@ -1,98 +1,8 @@
-import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import { AMAZON_INTEGRATION_MODULE } from "../../../../modules/amazon-integration"
-import AmazonIntegrationModuleService from "../../../../modules/amazon-integration/service"
-
-/**
- * OPTIONS /admin/amazon/marketplaces
- * CORS preflight 요청 처리
- */
-export const OPTIONS = async (
-  req: MedusaRequest,
-  res: MedusaResponse
-) => {
-  res.header("Access-Control-Allow-Origin", req.headers.origin || "*")
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-  res.header("Access-Control-Allow-Credentials", "true")
-  res.header("Access-Control-Max-Age", "86400")
-  res.status(204).end()
-}
-
-// 기본 Amazon 마켓플레이스 설정
-const DEFAULT_MARKETPLACES = [
-  {
-    marketplace_id: "ATVPDKIKX0DER",
-    country_code: "US",
-    name: "Amazon.com",
-    currency_code: "USD",
-    region: "NA",
-    endpoint: "sellingpartnerapi-na.amazon.com"
-  },
-  {
-    marketplace_id: "A1PA6795UKMFR9",
-    country_code: "DE", 
-    name: "Amazon.de",
-    currency_code: "EUR",
-    region: "EU",
-    endpoint: "sellingpartnerapi-eu.amazon.com"
-  },
-  {
-    marketplace_id: "A1VC38T7YXB528",
-    country_code: "JP",
-    name: "Amazon.co.jp", 
-    currency_code: "JPY",
-    region: "FE",
-    endpoint: "sellingpartnerapi-fe.amazon.com"
-  },
-  {
-    marketplace_id: "A1F83G8C2ARO7P",
-    country_code: "UK",
-    name: "Amazon.co.uk",
-    currency_code: "GBP", 
-    region: "EU",
-    endpoint: "sellingpartnerapi-eu.amazon.com"
-  },
-  {
-    marketplace_id: "A13V1IB3VIYZZH",
-    country_code: "FR",
-    name: "Amazon.fr",
-    currency_code: "EUR",
-    region: "EU", 
-    endpoint: "sellingpartnerapi-eu.amazon.com"
-  },
-  {
-    marketplace_id: "APJ6JRA9NG5V4",
-    country_code: "IT",
-    name: "Amazon.it",
-    currency_code: "EUR",
-    region: "EU",
-    endpoint: "sellingpartnerapi-eu.amazon.com"
-  },
-  {
-    marketplace_id: "A1RKKUPIHCS9HS",
-    country_code: "ES", 
-    name: "Amazon.es",
-    currency_code: "EUR",
-    region: "EU",
-    endpoint: "sellingpartnerapi-eu.amazon.com"
-  },
-  {
-    marketplace_id: "A2EUQ1WTGCTBG2",
-    country_code: "CA",
-    name: "Amazon.ca",
-    currency_code: "CAD",
-    region: "NA",
-    endpoint: "sellingpartnerapi-na.amazon.com"
-  },
-  {
-    marketplace_id: "A39IBJ37TRP1C6",
-    country_code: "AU",
-    name: "Amazon.com.au",
-    currency_code: "AUD", 
-    region: "FE",
-    endpoint: "sellingpartnerapi-fe.amazon.com"
-  }
-]
+import type {
+  MedusaRequest,
+  MedusaResponse,
+} from "@medusajs/framework/http"
+import { z } from "zod"
 
 /**
  * GET /admin/amazon/marketplaces
@@ -102,99 +12,91 @@ export const GET = async (
   req: MedusaRequest,
   res: MedusaResponse
 ) => {
-  const amazonService: AmazonIntegrationModuleService = req.scope.resolve(AMAZON_INTEGRATION_MODULE)
-  
   try {
-    const marketplaces = await amazonService.listAmazonMarketplaces()
+    const amazonService = req.scope.resolve("amazon_integration")
+
+    // 모든 마켓플레이스 조회
+    const allMarketplaces = await amazonService.listAmazonMarketplaces()
     
-    res.json({
-      marketplaces,
-      total: marketplaces.length
+    // 활성 마켓플레이스만 조회
+    const activeMarketplaces = await amazonService.getActiveMarketplaces()
+
+    // 각 마켓플레이스별 동기화 통계 추가
+    const enrichedMarketplaces = await Promise.all(
+      allMarketplaces.map(async (marketplace: any) => {
+        try {
+          // 해당 마켓플레이스의 동기화 레코드 조회
+          const syncRecords = await amazonService.listAmazonProductSyncs({
+            amazon_marketplace_id: marketplace.id
+          })
+
+          const completedSyncs = syncRecords.filter((s: any) => s.sync_status === "completed")
+          const pendingSyncs = syncRecords.filter((s: any) => s.sync_status === "pending")
+          const failedSyncs = syncRecords.filter((s: any) => s.sync_status === "failed")
+
+          // 최근 동기화 시간 계산
+          const lastSync = syncRecords
+            .filter((s: any) => s.last_sync_at)
+            .sort((a: any, b: any) => new Date(b.last_sync_at).getTime() - new Date(a.last_sync_at).getTime())
+            [0]?.last_sync_at
+
+          const lastSuccessfulSync = completedSyncs
+            .filter((s: any) => s.updated_at && s.sync_status === "completed")
+            .sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+            [0]?.updated_at
+
+          return {
+            ...marketplace,
+            sync_statistics: {
+              total_count: syncRecords.length,
+              completed_count: completedSyncs.length,
+              pending_count: pendingSyncs.length,
+              failed_count: failedSyncs.length,
+              success_rate: syncRecords.length > 0 
+                ? Math.round((completedSyncs.length / syncRecords.length) * 100)
+                : 0,
+              last_sync_attempt: lastSync,
+              last_successful_sync: lastSuccessfulSync
+            }
+          }
+        } catch (error) {
+          console.error(`Error getting sync stats for marketplace ${marketplace.id}:`, error)
+          return {
+            ...marketplace,
+            sync_statistics: {
+              total_count: 0,
+              completed_count: 0,
+              pending_count: 0,
+              failed_count: 0,
+              success_rate: 0,
+              last_sync_attempt: null,
+              last_successful_sync: null
+            }
+          }
+        }
+      })
+    )
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        all_marketplaces: enrichedMarketplaces,
+        active_marketplaces: activeMarketplaces,
+        statistics: {
+          total_marketplaces: allMarketplaces.length,
+          active_marketplaces: activeMarketplaces.length,
+          inactive_marketplaces: allMarketplaces.length - activeMarketplaces.length
+        }
+      }
     })
-  } catch (error) {
-    res.status(500).json({
-      message: "마켓플레이스 조회 중 오류 발생",
-      error: error.message
+
+  } catch (error: any) {
+    console.error("Get marketplaces error:", error)
+
+    return res.status(500).json({
+      success: false,
+      error: "마켓플레이스 목록 조회 중 오류가 발생했습니다.",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     })
   }
 }
-
-/**
- * POST /admin/amazon/marketplaces
- * Amazon 마켓플레이스 생성/설정
- */
-export const POST = async (
-  req: MedusaRequest<{
-    marketplace_id: string
-    seller_id?: string
-    mws_auth_token?: string
-    is_active?: boolean
-    auto_sync?: boolean
-  }>,
-  res: MedusaResponse
-) => {
-  const amazonService: AmazonIntegrationModuleService = req.scope.resolve(AMAZON_INTEGRATION_MODULE)
-  
-  try {
-    const { marketplace_id, seller_id, mws_auth_token, is_active, auto_sync } = req.body
-    
-    // 기본 마켓플레이스 정보 찾기
-    const defaultMarketplace = DEFAULT_MARKETPLACES.find(
-      m => m.marketplace_id === marketplace_id
-    )
-    
-    if (!defaultMarketplace) {
-      return res.status(400).json({
-        message: "지원되지 않는 마켓플레이스입니다",
-        supported_marketplaces: DEFAULT_MARKETPLACES.map(m => ({
-          marketplace_id: m.marketplace_id,
-          name: m.name,
-          country_code: m.country_code
-        }))
-      })
-    }
-    
-    // 기존 마켓플레이스 확인
-    const existingMarketplaces = await amazonService.listAmazonMarketplaces({
-      marketplace_id
-    })
-    
-    if (existingMarketplaces.length > 0) {
-      // 업데이트
-      const updated = await amazonService.updateAmazonMarketplaces(
-        { id: existingMarketplaces[0].id },
-        {
-          seller_id,
-          mws_auth_token,
-          is_active: is_active ?? true,
-          auto_sync: auto_sync ?? true,
-        }
-      )
-      
-      res.json({
-        marketplace: updated[0],
-        message: "마켓플레이스가 업데이트되었습니다"
-      })
-    } else {
-      // 새로 생성
-      const created = await amazonService.createAmazonMarketplaces({
-        ...defaultMarketplace,
-        seller_id,
-        mws_auth_token,
-        is_active: is_active ?? true,
-        auto_sync: auto_sync ?? true,
-      })
-      
-      res.status(201).json({
-        marketplace: created,
-        message: "마켓플레이스가 생성되었습니다"
-      })
-    }
-    
-  } catch (error) {
-    res.status(500).json({
-      message: "마켓플레이스 설정 중 오류 발생",
-      error: error.message
-    })
-  }
-} 

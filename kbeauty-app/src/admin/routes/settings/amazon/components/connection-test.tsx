@@ -69,19 +69,19 @@ export const ConnectionTest = ({ marketplace }: ConnectionTestProps) => {
         ])
         toast.success("연결 테스트가 완료되었습니다.")
       } else {
-        // 실제 Amazon SP-API 연결 테스트 구현
-        console.log('🧪 [CONNECTION TEST] Amazon SP-API 연결 테스트 시작')
+        // API 호출이 실패했거나 결과가 없는 경우의 폴백
+        console.log('🧪 [CONNECTION TEST] API 결과가 없어 폴백 테스트 실행')
         
         const testResults: TestResult[] = []
         
-        // 1. 환경변수 설정 확인 (상세)
+        // VITE_ 환경 변수 확인 (클라이언트 사이드에서 접근 가능)
         const envVars = {
-          clientId: !!process.env.AMAZON_CLIENT_ID,
-          clientSecret: !!process.env.AMAZON_CLIENT_SECRET,
-          refreshToken: !!process.env.AMAZON_REFRESH_TOKEN,
+          clientId: !!(import.meta.env?.VITE_AMAZON_LWA_CLIENT_ID),
+          clientSecret: !!(import.meta.env?.VITE_AMAZON_LWA_CLIENT_SECRET),
+          refreshToken: !!(import.meta.env?.VITE_AMAZON_LWA_REFRESH_TOKEN),
           sellerId: !!effectiveSellerID,
-          region: process.env.AMAZON_REGION || 'NA',
-          sandboxMode: process.env.AMAZON_SANDBOX_MODE || 'false'
+          region: import.meta.env?.VITE_AMAZON_SP_API_REGION || 'us-east-1',
+          sandboxMode: import.meta.env?.VITE_AMAZON_SP_API_SANDBOX || 'false'
         }
         
         const envStatus = Object.entries(envVars).map(([key, value]) => {
@@ -111,8 +111,8 @@ export const ConnectionTest = ({ marketplace }: ConnectionTestProps) => {
             : 'Seller ID가 설정되지 않았습니다'
         })
         
-        // 4. 샌드박스 모드 확인
-        const isSandbox = process.env.AMAZON_SANDBOX_MODE === 'true'
+        // 4. 샌드박스 모드 확인 - 클라이언트 안전 버전
+        const isSandbox = envVars.sandboxMode === 'true'
         testResults.push({
           status: 'success',
           message: 'Sandbox Mode',

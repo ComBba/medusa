@@ -1,6 +1,6 @@
 import { ExecArgs } from "@medusajs/framework/types"
 import { AMAZON_INTEGRATION_MODULE } from "../modules/amazon-integration"
-import AmazonIntegrationModuleService from "../modules/amazon-integration/service"
+// import AmazonIntegrationModuleService from "../modules/amazon-integration/service"
 import { amazonSyncProductWorkflow } from "../workflows/amazon-sync-product"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 
@@ -14,7 +14,7 @@ import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
  */
 export default async function testAmazonSync({ container, args }: ExecArgs) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
-  const amazonService: AmazonIntegrationModuleService = container.resolve(AMAZON_INTEGRATION_MODULE)
+  const amazonService = container.resolve(AMAZON_INTEGRATION_MODULE)
   const productService = container.resolve(Modules.PRODUCT)
 
   logger.info("🧪 Amazon 동기화 테스트 시작...")
