@@ -432,7 +432,7 @@ export const amazonSyncBatchV2Workflow = createWorkflow(
     )
 
     // 4. 모든 배치 결과 집계
-    const { summary, processing_summary, errors } = aggregateBatchResultsStep({
+    const batchResults = aggregateBatchResultsStep({
       groupResults,
     })
 
@@ -455,9 +455,9 @@ export const amazonSyncBatchV2Workflow = createWorkflow(
       },
       pagination_info: pagination,
       batch_info,
-      processing_results: summary,
-      group_summaries: processing_summary,
-      errors,
+      processing_results: batchResults.summary,
+      group_summaries: batchResults.processing_summary,
+      errors: batchResults.errors,
       next_batch_offset: pagination.next_offset,
       has_more_products: pagination.has_more,
       recommendations: {
@@ -469,7 +469,7 @@ export const amazonSyncBatchV2Workflow = createWorkflow(
             offset: pagination.next_offset,
           }
         } : null,
-        error_analysis: errors.length > 0 ? 
+        error_analysis: (batchResults.errors && Array.isArray(batchResults.errors) && batchResults.errors.length > 0) ? 
           "Review failed products and consider retrying with force_update option" : 
           "All products processed successfully"
       }
