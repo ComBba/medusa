@@ -1,5 +1,17 @@
 # @medusajs/dashboard
 
+## 2.8.9
+
+### Patch Changes
+
+- [#11982](https://github.com/medusajs/medusa/pull/11982) [`4da237f615b8cf1dac7935f2faeb97f2c145c62f`](https://github.com/medusajs/medusa/commit/4da237f615b8cf1dac7935f2faeb97f2c145c62f) Thanks [@SteelRazor47](https://github.com/SteelRazor47)! - fix(dashboard): correct overflow in a few settings edit forms
+
+- Updated dependencies []:
+  - @medusajs/js-sdk@2.8.9
+  - @medusajs/admin-shared@2.8.9
+  - @medusajs/icons@2.8.9
+  - @medusajs/ui@4.0.19
+
 ## 2.8.8
 
 ### Patch Changes

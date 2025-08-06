@@ -1,5 +1,35 @@
 # integration-tests-http
 
+## 1.0.21
+
+### Patch Changes
+
+- [#12960](https://github.com/medusajs/medusa/pull/12960) [`1bdf602f1c1da181e2839858d2f7e8aea503573a`](https://github.com/medusajs/medusa/commit/1bdf602f1c1da181e2839858d2f7e8aea503573a) Thanks [@scherddel](https://github.com/scherddel)! - This fixes the discount\_ calculation logic and promotion tax inclusiveness calculation
+
+- Updated dependencies [[`9fb5baa912674b6d35492b147e0f22d8f8330a24`](https://github.com/medusajs/medusa/commit/9fb5baa912674b6d35492b147e0f22d8f8330a24), [`f6736d96616aaff51399b2733905f9e340efc8be`](https://github.com/medusajs/medusa/commit/f6736d96616aaff51399b2733905f9e340efc8be), [`1bdf602f1c1da181e2839858d2f7e8aea503573a`](https://github.com/medusajs/medusa/commit/1bdf602f1c1da181e2839858d2f7e8aea503573a), [`75320e744f680afba06d8ad852f169242736fb19`](https://github.com/medusajs/medusa/commit/75320e744f680afba06d8ad852f169242736fb19), [`6e66e36d0814a524440c05a99c849c3d62e48ed3`](https://github.com/medusajs/medusa/commit/6e66e36d0814a524440c05a99c849c3d62e48ed3), [`9766570827ebf50d49d8daf956deecce6666a8cc`](https://github.com/medusajs/medusa/commit/9766570827ebf50d49d8daf956deecce6666a8cc)]:
+  - @medusajs/core-flows@2.8.9
+  - @medusajs/promotion@2.8.9
+  - @medusajs/utils@2.8.9
+  - @medusajs/medusa@2.8.9
+  - @medusajs/modules-sdk@2.8.9
+  - @medusajs/test-utils@2.8.9
+  - @medusajs/api-key@2.8.9
+  - @medusajs/auth@2.8.9
+  - @medusajs/cache-inmemory@2.8.9
+  - @medusajs/customer@2.8.9
+  - @medusajs/event-bus-local@2.8.9
+  - @medusajs/fulfillment@2.8.9
+  - @medusajs/inventory@2.8.9
+  - @medusajs/pricing@2.8.9
+  - @medusajs/product@2.8.9
+  - @medusajs/fulfillment-manual@2.8.9
+  - @medusajs/region@2.8.9
+  - @medusajs/stock-location@2.8.9
+  - @medusajs/store@2.8.9
+  - @medusajs/tax@2.8.9
+  - @medusajs/user@2.8.9
+  - @medusajs/workflow-engine-inmemory@2.8.9
+
 ## 1.0.20
 
 ### Patch Changes
