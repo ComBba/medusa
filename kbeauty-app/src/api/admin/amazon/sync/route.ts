@@ -1,5 +1,5 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import AmazonIntegrationModuleService from "../../../../modules/amazon-integration/service"
+import { AMAZON_INTEGRATION_MODULE } from "../../../../modules/amazon-integration"
 
 /**
  * GET /admin/amazon/sync - 상품 동기화 목록 조회
@@ -8,7 +8,7 @@ export async function GET(
   req: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
-  const amazonService: AmazonIntegrationModuleService = req.scope.resolve("amazonIntegrationModuleService")
+  const amazonService = req.scope.resolve(AMAZON_INTEGRATION_MODULE)
   
   try {
     const {
@@ -154,7 +154,7 @@ export async function POST(
   req: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
-  const amazonService: AmazonIntegrationModuleService = req.scope.resolve("amazonIntegrationModuleService")
+  const amazonService = req.scope.resolve(AMAZON_INTEGRATION_MODULE)
   
   try {
     const { product_ids, marketplace_id, mode = 'VALIDATION_PREVIEW' } = req.body as {
