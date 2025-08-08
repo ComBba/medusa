@@ -1,6 +1,7 @@
 import { MedusaService } from "@medusajs/framework/utils"
 import AmazonMarketplace from "./models/amazon-marketplace"
 import AmazonProductSync from "./models/amazon-product-sync"
+import { AmazonSPAPIClient, AmazonSPAPIConfig } from "./services/amazon-sp-api-client"
 
 type InjectedDependencies = {
   // 추후 필요한 의존성들 추가 예정
@@ -16,10 +17,45 @@ class AmazonIntegrationModuleService extends MedusaService({
   AmazonProductSync,
 }) {
   protected readonly dependencies_: InjectedDependencies
+  private spApiClient: AmazonSPAPIClient | null = null
 
   constructor(dependencies: InjectedDependencies) {
     super(...arguments)
     this.dependencies_ = dependencies
+  }
+
+  /**
+   * Amazon SP-API 클라이언트 초기화
+   */
+  private initializeSpApiClient(): AmazonSPAPIClient {
+    if (this.spApiClient) {
+      return this.spApiClient
+    }
+
+    const config = this.getSpApiConfig()
+    
+    if (!config.isConfigured) {
+      throw new Error('Amazon SP-API 설정이 완료되지 않았습니다. 환경변수를 확인해주세요.')
+    }
+
+    const spApiConfig: AmazonSPAPIConfig = {
+      region: this.mapAwsRegionToSpApiRegion(config.region || 'us-east-1'),
+      refreshToken: config.refreshToken || '',
+      clientId: config.clientId || '',
+      clientSecret: config.clientSecret || '',
+      sandbox: process.env.AMAZON_SP_API_SANDBOX === 'true',
+      marketplace: process.env.AMAZON_MARKETPLACE_IDS?.split(',')[0]
+    }
+
+    this.spApiClient = new AmazonSPAPIClient(spApiConfig)
+    return this.spApiClient
+  }
+
+  /**
+   * SP-API 클라이언트 가져오기 (Lazy Loading)
+   */
+  private getSpApiClient(): AmazonSPAPIClient {
+    return this.initializeSpApiClient()
   }
 
   /**
@@ -149,50 +185,176 @@ class AmazonIntegrationModuleService extends MedusaService({
 
   /**
    * Amazon SP-API를 사용하여 상품을 Amazon에 제출
-   * 샌드박스 환경에서 VALIDATION_PREVIEW 모드 사용
+   * 새로운 공식 SDK 사용
    */
   async submitProductToAmazon(productId: string, marketplaceId: string, mode: string = 'VALIDATION_PREVIEW') {
     try {
-      // 환경변수에서 Amazon SP-API 설정 가져오기
+      const spApiClient = this.getSpApiClient()
       const spApiConfig = this.getSpApiConfig()
-      
-      if (!spApiConfig.isConfigured) {
-        throw new Error('Amazon SP-API 설정이 완료되지 않았습니다')
-      }
 
       // 샌드박스 환경 사용 여부 확인
       const isSandbox = process.env.AMAZON_SANDBOX_MODE === 'true' || mode === 'VALIDATION_PREVIEW'
-      const baseUrl = isSandbox 
-        ? this.getSandboxEndpoint(spApiConfig.region)
-        : this.getProductionEndpoint(spApiConfig.region)
 
       console.log(`🧪 [AMAZON SYNC] 샌드박스 모드: ${isSandbox ? 'YES' : 'NO'}`)
-      console.log(`🔗 [AMAZON SYNC] 엔드포인트: ${baseUrl}`)
+      console.log(`🔗 [AMAZON SYNC] 지역: ${spApiConfig.region}`)
       console.log(`📝 [AMAZON SYNC] 모드: ${mode}`)
 
-      // Medusa 상품 정보 조회 (실제 구현에서는 ProductService 사용)
+      // Medusa 상품 정보 조회
       const productData = await this.getProductForAmazonSync(productId)
       
-      // Amazon 리스팅 페이로드 생성
-      const listingPayload = this.createAmazonListingPayload(productData, marketplaceId, mode)
+      // Amazon 리스팅 속성 생성
+      const listingAttributes = this.createAmazonListingAttributes(productData, marketplaceId)
 
-      // SP-API 호출 시뮬레이션 (실제 환경에서는 Amazon SP-API SDK 사용)
-      const submissionResult = await this.callSpApiListings(
-        baseUrl,
-        spApiConfig,
-        listingPayload,
+      // 상품 제출 (PUT 메서드로 생성/업데이트)
+      const submissionResult = await spApiClient.putListingsItem(
+        process.env.AMAZON_SELLER_ID || '',
         productData.sku,
-        marketplaceId
+        [marketplaceId],
+        'PRODUCT', // 기본 제품 타입
+        listingAttributes
       )
 
       console.log(`✅ [AMAZON SYNC] 제품 ${productId} 제출 완료:`, submissionResult)
+
+      // 동기화 기록 업데이트
+      await this.updateSyncRecord(productId, marketplaceId, 'completed', submissionResult)
 
       return submissionResult
 
     } catch (error) {
       console.error(`❌ [AMAZON SYNC] 제품 ${productId} 제출 실패:`, error)
+      
+      // 동기화 실패 기록
+      await this.updateSyncRecord(productId, marketplaceId, 'failed', { error: error.message })
+      
       throw error
     }
+  }
+
+  /**
+   * 상품 가격 업데이트 (새로운 SDK 사용)
+   */
+  async updateProductPrice(productId: string, marketplaceId: string, price: number, currency: string = 'USD') {
+    try {
+      const spApiClient = this.getSpApiClient()
+      const spApiConfig = this.getSpApiConfig()
+      const productData = await this.getProductForAmazonSync(productId)
+
+      const result = await spApiClient.updatePrice(
+        process.env.AMAZON_SELLER_ID || '',
+        productData.sku,
+        marketplaceId,
+        price,
+        currency
+      )
+
+      console.log(`💰 [AMAZON SYNC] 가격 업데이트 완료: ${productId} -> ${price} ${currency}`)
+      
+      await this.updateSyncRecord(productId, marketplaceId, 'completed', { type: 'price_update', result })
+
+      return result
+    } catch (error) {
+      console.error(`❌ [AMAZON SYNC] 가격 업데이트 실패:`, error)
+      await this.updateSyncRecord(productId, marketplaceId, 'failed', { error: error.message })
+      throw error
+    }
+  }
+
+  /**
+   * 상품 재고 업데이트 (새로운 SDK 사용)
+   */
+  async updateProductInventory(productId: string, marketplaceId: string, quantity: number) {
+    try {
+      const spApiClient = this.getSpApiClient()
+      const spApiConfig = this.getSpApiConfig()
+      const productData = await this.getProductForAmazonSync(productId)
+
+      const result = await spApiClient.updateInventory(
+        process.env.AMAZON_SELLER_ID || '',
+        productData.sku,
+        marketplaceId,
+        quantity
+      )
+
+      console.log(`📦 [AMAZON SYNC] 재고 업데이트 완료: ${productId} -> ${quantity}개`)
+      
+      await this.updateSyncRecord(productId, marketplaceId, 'completed', { type: 'inventory_update', result })
+
+      return result
+    } catch (error) {
+      console.error(`❌ [AMAZON SYNC] 재고 업데이트 실패:`, error)
+      await this.updateSyncRecord(productId, marketplaceId, 'failed', { error: error.message })
+      throw error
+    }
+  }
+
+  /**
+   * 아마존 마켓플레이스 연결 테스트 (새로운 SDK 사용)
+   */
+  async testAmazonConnection() {
+    try {
+      const spApiClient = this.getSpApiClient()
+      const result = await spApiClient.testConnection()
+
+      console.log(`🔗 [AMAZON SYNC] 연결 테스트:`, result)
+      return result
+    } catch (error) {
+      console.error(`❌ [AMAZON SYNC] 연결 테스트 실패:`, error)
+      throw error
+    }
+  }
+
+  /**
+   * 마켓플레이스 참여 정보 조회 (새로운 SDK 사용)
+   */
+  async getMarketplaceParticipations() {
+    try {
+      const spApiClient = this.getSpApiClient()
+      const result = await spApiClient.getMarketplaceParticipations()
+
+      console.log(`🌍 [AMAZON SYNC] 마켓플레이스 참여 정보 조회 완료`)
+      return result
+    } catch (error) {
+      console.error(`❌ [AMAZON SYNC] 마켓플레이스 참여 정보 조회 실패:`, error)
+      throw error
+    }
+  }
+
+  /**
+   * Amazon 리스팅 정보 조회 (새로운 SDK 사용)
+   */
+  async getAmazonListing(sku: string, marketplaceId: string) {
+    try {
+      const spApiClient = this.getSpApiClient()
+      const spApiConfig = this.getSpApiConfig()
+
+      const result = await spApiClient.getListingsItem(
+        process.env.AMAZON_SELLER_ID || '',
+        sku,
+        [marketplaceId]
+      )
+
+      console.log(`📋 [AMAZON SYNC] 리스팅 정보 조회 완료: ${sku}`)
+      return result
+    } catch (error) {
+      console.error(`❌ [AMAZON SYNC] 리스팅 정보 조회 실패:`, error)
+      throw error
+    }
+  }
+
+  /**
+   * AWS 리전을 SP-API 리전으로 매핑
+   */
+  private mapAwsRegionToSpApiRegion(awsRegion: string): string {
+    const regionMap: Record<string, string> = {
+      'us-east-1': 'na',
+      'us-west-2': 'na',
+      'eu-west-1': 'eu',
+      'ap-southeast-1': 'fe',
+      'ap-northeast-1': 'fe'
+    }
+    
+    return regionMap[awsRegion] || 'na'
   }
 
   /**
@@ -200,11 +362,11 @@ class AmazonIntegrationModuleService extends MedusaService({
    */
   private getSpApiConfig() {
     const config = {
-      clientId: process.env.AMAZON_CLIENT_ID,
-      clientSecret: process.env.AMAZON_CLIENT_SECRET,
-      refreshToken: process.env.AMAZON_REFRESH_TOKEN,
+      clientId: process.env.AMAZON_LWA_CLIENT_ID,
+      clientSecret: process.env.AMAZON_LWA_CLIENT_SECRET,
+      refreshToken: process.env.AMAZON_LWA_REFRESH_TOKEN,
       sellerId: process.env.AMAZON_SELLER_ID,
-      region: process.env.AMAZON_REGION || 'NA',
+      region: process.env.AMAZON_SP_API_REGION || 'us-east-1',
       isConfigured: false
     }
 
@@ -298,7 +460,111 @@ class AmazonIntegrationModuleService extends MedusaService({
   }
 
   /**
-   * Amazon 리스팅 페이로드 생성
+   * Amazon 리스팅 속성 생성 (새로운 SDK용)
+   */
+  private createAmazonListingAttributes(product: any, marketplaceId: string) {
+    return {
+      item_name: [
+        {
+          value: product.title,
+          language_tag: "en_US"
+        }
+      ],
+      product_description: [
+        {
+          value: product.description,
+          language_tag: "en_US"
+        }
+      ],
+      purchasable_offer: [
+        {
+          marketplace_id: marketplaceId,
+          currency: "USD",
+          our_price: [
+            {
+              schedule: [
+                {
+                  value_with_tax: product.price
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      fulfillment_availability: [
+        {
+          fulfillment_channel_code: "DEFAULT",
+          quantity: 100, // 기본 재고
+          marketplace_id: marketplaceId
+        }
+      ],
+      item_weight: [
+        {
+          unit: "grams",
+          value: product.weight || 100
+        }
+      ],
+      item_dimensions: [
+        {
+          length: {
+            unit: "centimeters",
+            value: product.dimensions?.length || 10
+          },
+          width: {
+            unit: "centimeters", 
+            value: product.dimensions?.width || 5
+          },
+          height: {
+            unit: "centimeters",
+            value: product.dimensions?.height || 3
+          }
+        }
+      ],
+      main_product_image_locator: [
+        {
+          media_location: product.images?.[0] || "https://example.com/default-image.jpg"
+        }
+      ]
+    }
+  }
+
+  /**
+   * 동기화 기록 업데이트
+   */
+  private async updateSyncRecord(productId: string, marketplaceId: string, status: 'completed' | 'failed', data: any) {
+    try {
+      // 기존 동기화 기록 찾기
+      const existingSyncs = await this.listAmazonProductSyncs({
+        medusa_product_id: productId,
+        marketplace_id: marketplaceId
+      })
+
+      const syncData = {
+        medusa_product_id: productId,
+        marketplace_id: marketplaceId,
+        sync_status: status,
+        last_sync_at: new Date(),
+        sync_data: data,
+        error_message: status === 'failed' ? data.error : null
+      }
+
+      if (existingSyncs.length > 0) {
+        // 기존 기록 업데이트
+        await this.updateAmazonProductSyncs([{
+          selector: { id: existingSyncs[0].id },
+          data: syncData
+        }])
+      } else {
+        // 새 기록 생성
+        await this.createAmazonProductSyncs(syncData)
+      }
+    } catch (error) {
+      console.error(`동기화 기록 업데이트 실패:`, error)
+    }
+  }
+
+  /**
+   * Amazon 리스팅 페이로드 생성 (레거시 - 하위 호환성 유지)
    */
   private createAmazonListingPayload(product: any, marketplaceId: string, mode: string) {
     return {
