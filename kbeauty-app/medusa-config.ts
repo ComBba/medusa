@@ -11,6 +11,12 @@ module.exports = defineConfig({
       authCors: process.env.AUTH_CORS || "https://admin.kbeauty.market,http://admin.kbeauty.market,https://api.kbeauty.market,http://localhost:10000,http://localhost:9000",
       jwtSecret: process.env.JWT_SECRET || "supersecret",
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
+      // JWT 토큰 만료 시간 1시간 설정
+      jwtOptions: {
+        expiresIn: "1h", // 1시간
+        issuer: "kbeauty.market",
+        audience: "admin"
+      }
     }
   },
     admin: {

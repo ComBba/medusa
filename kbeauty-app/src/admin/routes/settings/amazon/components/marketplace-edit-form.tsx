@@ -155,9 +155,9 @@ export const MarketplaceEditForm = ({ marketplace, onSave }: MarketplaceEditForm
                 </div>
               </Drawer.Title>
               <Drawer.Description asChild>
-                <Text as="div" id="marketplace-config-description" className="text-medusa-fg-subtle">
+                <div id="marketplace-config-description" className="text-medusa-fg-subtle">
                   Configure marketplace credentials and synchronization settings
-                </Text>
+                </div>
               </Drawer.Description>
             </Drawer.Header>
             
@@ -215,12 +215,12 @@ export const MarketplaceEditForm = ({ marketplace, onSave }: MarketplaceEditForm
                           {fieldState.error.message}
                         </Text>
                       )}
-                      <Text as="div" className="text-xs text-medusa-fg-subtle">
+                      <div className="text-xs text-medusa-fg-subtle">
                         {envSellerID 
                           ? "환경변수 기본값이 설정되어 있습니다. 다른 값을 입력하면 데이터베이스에 저장됩니다."
                           : "Amazon Seller Central에서 확인할 수 있는 셀러 ID를 입력하세요."
                         }
-                      </Text>
+                      </div>
                     </div>
                   )
                 }}
@@ -267,9 +267,9 @@ export const MarketplaceEditForm = ({ marketplace, onSave }: MarketplaceEditForm
                           {fieldState.error.message}
                         </Text>
                       )}
-                      <Text as="div" className="text-xs text-medusa-fg-subtle">
+                      <div className="text-xs text-medusa-fg-subtle">
                         Marketplace Web Service 인증 토큰입니다. 대부분의 경우 SP-API만으로 충분하므로 비워두셔도 됩니다.
-                      </Text>
+                      </div>
                     </div>
                   )
                 }}
@@ -294,9 +294,9 @@ export const MarketplaceEditForm = ({ marketplace, onSave }: MarketplaceEditForm
                           {field.value ? "자동 동기화 활성화됨" : "자동 동기화 비활성화됨"}
                         </Text>
                       </div>
-                      <Text as="div" className="text-xs text-medusa-fg-subtle">
+                      <span className="text-xs text-medusa-fg-subtle">
                         상품 생성/수정 시 자동으로 Amazon에 동기화합니다.
-                      </Text>
+                      </span>
                     </div>
                   )
                 }}
@@ -306,18 +306,18 @@ export const MarketplaceEditForm = ({ marketplace, onSave }: MarketplaceEditForm
               <div className="p-4 bg-medusa-bg-base border border-medusa-border-base rounded-lg">
                 <Heading level="h3" className="mb-3">💡 Setup Guide</Heading>
                 <div className="space-y-2 text-sm">
-                  <Text as="div">1. Amazon Seller Central에서 Seller ID를 확인하세요</Text>
-                  <Text as="div">2. SP-API 앱을 등록하고 필요한 권한을 요청하세요</Text>
-                  <Text as="div">3. Seller ID를 입력하고 저장하여 데이터베이스에 영구 저장하세요</Text>
-                  <Text as="div">4. 설정 저장 후 "Test Connection" 기능으로 연결을 확인하세요</Text>
-                  <Text as="div">5. 마켓플레이스를 활성화하여 동기화를 시작하세요</Text>
+                  <div>1. Amazon Seller Central에서 Seller ID를 확인하세요</div>
+                  <div>2. SP-API 앱을 등록하고 필요한 권한을 요청하세요</div>
+                  <div>3. Seller ID를 입력하고 저장하여 데이터베이스에 영구 저장하세요</div>
+                  <div>4. 설정 저장 후 "Test Connection" 기능으로 연결을 확인하세요</div>
+                  <div>5. 마켓플레이스를 활성화하여 동기화를 시작하세요</div>
                 </div>
                 {getEnvSellerID() && !marketplace.seller_id && (
                   <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <Text as="div" className="text-sm text-blue-700">
+                    <div className="text-sm text-blue-700">
                       <strong>💡 팁:</strong> 현재 환경변수 기본값({getEnvSellerID().substring(0, 6)}...)을 사용하고 있습니다. 
                       위 필드에 동일한 값을 입력하고 저장하면 데이터베이스에 영구 저장됩니다.
-                    </Text>
+                    </div>
                   </div>
                 )}
               </div>

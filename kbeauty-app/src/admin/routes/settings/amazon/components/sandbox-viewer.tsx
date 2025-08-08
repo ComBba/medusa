@@ -318,40 +318,40 @@ export const SandboxViewer = () => {
           <div className="p-3 bg-blue-50 border border-blue-200 rounded">
             <Text className="font-medium text-blue-800 mb-2">📍 올바른 테스트 환경 접근:</Text>
             <div className="space-y-1 text-sm">
-              <Text as="div"><strong>1. Seller Central:</strong> https://sellercentral.amazon.com</Text>
-              <Text as="div"><strong>2. Developer Console:</strong> Apps and Services → Develop Apps</Text>
-              <Text as="div"><strong>3. SP-API 샌드박스:</strong> https://sandbox.sellingpartnerapi.amazon.com</Text>
+              <div><strong>1. Seller Central:</strong> https://sellercentral.amazon.com</div>
+              <div><strong>2. Developer Console:</strong> Apps and Services → Develop Apps</div>
+              <div><strong>3. SP-API 샌드박스:</strong> https://sandbox.sellingpartnerapi.amazon.com</div>
             </div>
           </div>
           
           <div className="p-3 bg-green-50 border border-green-200 rounded">
             <Text className="font-medium text-green-800 mb-2">✅ 테스트 절차:</Text>
             <div className="space-y-1 text-sm">
-              <Text as="div"><strong>1.</strong> 환경변수 설정: AMAZON_SANDBOX_MODE=true</Text>
-              <Text as="div"><strong>2.</strong> Developer Console에서 앱 등록 및 인증</Text>
-              <Text as="div"><strong>3.</strong> 연결 테스트 탭에서 SP-API 연결 확인</Text>
-              <Text as="div"><strong>4.</strong> VALIDATION_PREVIEW 모드로 상품 검증</Text>
-              <Text as="div"><strong>5.</strong> 테스트 완료 후 프로덕션 전환</Text>
+              <div><strong>1.</strong> 환경변수 설정: AMAZON_SANDBOX_MODE=true</div>
+              <div><strong>2.</strong> Developer Console에서 앱 등록 및 인증</div>
+              <div><strong>3.</strong> 연결 테스트 탭에서 SP-API 연결 확인</div>
+              <div><strong>4.</strong> VALIDATION_PREVIEW 모드로 상품 검증</div>
+              <div><strong>5.</strong> 테스트 완료 후 프로덕션 전환</div>
             </div>
           </div>
           
           <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
             <Text className="font-medium text-yellow-800 mb-2">⚠️ 중요한 변경사항:</Text>
             <div className="space-y-1 text-sm text-yellow-700">
-              <Text as="div">• 구 URL (sandbox.sellercentral.amazon.com)은 더 이상 사용되지 않음</Text>
-              <Text as="div">• 모든 테스트는 일반 Seller Central의 Developer Console을 통해 진행</Text>
-              <Text as="div">• SP-API 샌드박스는 통일된 엔드포인트 사용 (지역 구분 없음)</Text>
+              <div>• 구 URL (sandbox.sellercentral.amazon.com)은 더 이상 사용되지 않음</div>
+              <div>• 모든 테스트는 일반 Seller Central의 Developer Console을 통해 진행</div>
+              <div>• SP-API 샌드박스는 통일된 엔드포인트 사용 (지역 구분 없음)</div>
             </div>
           </div>
           
           <div className="p-3 bg-blue-50 border border-blue-200 rounded">
             <Text className="font-medium text-blue-800 mb-2">📖 공식 문서 참고:</Text>
             <div className="space-y-1 text-sm text-blue-700">
-              <Text as="div">• <strong>SP-API 문서:</strong> https://developer-docs.amazon.com/sp-api/docs/welcome</Text>
-              <Text as="div">• <strong>온보딩 가이드:</strong> https://developer-docs.amazon.com/sp-api/docs/onboarding-overview</Text>
-              <Text as="div">• <strong>샌드박스 가이드:</strong> https://developer-docs.amazon.com/sp-api/docs/sp-api-sandbox</Text>
-              <Text as="div">• <strong>API 레퍼런스:</strong> https://developer-docs.amazon.com/sp-api/reference</Text>
-              <Text as="div">• <strong>마켓플레이스 ID:</strong> https://developer-docs.amazon.com/sp-api/docs/marketplace-ids</Text>
+              <div>• <strong>SP-API 문서:</strong> https://developer-docs.amazon.com/sp-api/docs/welcome</div>
+              <div>• <strong>온보딩 가이드:</strong> https://developer-docs.amazon.com/sp-api/docs/onboarding-overview</div>
+              <div>• <strong>샌드박스 가이드:</strong> https://developer-docs.amazon.com/sp-api/docs/sp-api-sandbox</div>
+              <div>• <strong>API 레퍼런스:</strong> https://developer-docs.amazon.com/sp-api/reference</div>
+              <div>• <strong>마켓플레이스 ID:</strong> https://developer-docs.amazon.com/sp-api/docs/marketplace-ids</div>
             </div>
           </div>
         </div>
