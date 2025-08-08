@@ -38,12 +38,15 @@ export const AmazonMarketplacesTable = ({ onMarketplaceSelect }: AmazonMarketpla
   const fetchMarketplaces = async () => {
     try {
       setLoading(true)
+      console.log('🔄 [FETCH] Starting to fetch marketplaces...')
       const data = await amazonSyncClient.getMarketplaces() as any
+      console.log('📦 [FETCH] Raw API response:', data)
       const marketplacesList = data.marketplaces || []
+      console.log('📋 [FETCH] Marketplaces list:', marketplacesList)
       
       // 환경변수 기본값으로 seller_id 보완
       const envSellerID = import.meta.env.VITE_AMAZON_SELLER_ID
-      const enhancedMarketplaces = marketplacesList.map((mp: AmazonMarketplace) => ({
+      const enhancedMarketplaces = marketplacesList.map((mp: any) => ({
         ...mp,
         // DB에 저장된 값이 없고 환경변수 기본값이 있으면 사용
         seller_id: mp.seller_id || envSellerID || null,
@@ -57,7 +60,7 @@ export const AmazonMarketplacesTable = ({ onMarketplaceSelect }: AmazonMarketpla
         envSellerID,
         raw: marketplacesList,
         enhanced: enhancedMarketplaces,
-        usMarketplace: enhancedMarketplaces.find(mp => mp.marketplace_id === 'ATVPDKIKX0DER')
+        usMarketplace: enhancedMarketplaces.find((mp: any) => mp.marketplace_id === 'ATVPDKIKX0DER')
       })
       
       setMarketplaces(enhancedMarketplaces)
@@ -101,31 +104,32 @@ export const AmazonMarketplacesTable = ({ onMarketplaceSelect }: AmazonMarketpla
       const result = await amazonSyncClient.updateMarketplace(marketplace.id, updateData)
       console.log('✅ [TOGGLE] API result:', result)
       
-      // API 응답의 구조 상세 로깅
-      if (result) {
-        console.log('📊 [TOGGLE] API response structure:', {
-          hasMarketplace: !!result.marketplace,
-          marketplaceData: result.marketplace,
-          fullResponse: result,
-          responseKeys: Object.keys(result || {})
-        })
+              // API 응답의 구조 상세 로깅
+        if (result) {
+          console.log('📊 [TOGGLE] API response structure:', {
+            hasMarketplace: !!(result as any).marketplace,
+            marketplaceData: (result as any).marketplace,
+            fullResponse: result,
+            responseKeys: Object.keys(result || {})
+          })
         
         // 마켓플레이스 데이터 상세 로깅
-        if (result.marketplace) {
+        if ((result as any).marketplace) {
+          const marketplace = (result as any).marketplace
           console.log('🔍 [TOGGLE] Marketplace details:', {
-            id: result.marketplace.id,
-            name: result.marketplace.name,
-            is_active: result.marketplace.is_active,
-            seller_id: result.marketplace.seller_id,
-            auto_sync: result.marketplace.auto_sync,
-            marketplace_id: result.marketplace.marketplace_id
+            id: marketplace.id,
+            name: marketplace.name,
+            is_active: marketplace.is_active,
+            seller_id: marketplace.seller_id,
+            auto_sync: marketplace.auto_sync,
+            marketplace_id: marketplace.marketplace_id
           })
         }
       }
 
       // API 응답에서 업데이트된 마켓플레이스 데이터가 있으면 직접 사용
-      if (result && result.marketplace) {
-        const updatedMarketplace = result.marketplace
+      if (result && (result as any).marketplace) {
+        const updatedMarketplace = (result as any).marketplace
         
         // 현재 마켓플레이스 목록에서 해당 마켓플레이스 업데이트
         setMarketplaces(prevMarketplaces => 

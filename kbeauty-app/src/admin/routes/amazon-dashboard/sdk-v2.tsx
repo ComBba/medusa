@@ -78,7 +78,7 @@ const AmazonSDKV2Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview")
 
   // Amazon 연결 상태 조회
-  const { data: connectionStatus } = useQuery<any>({
+  const { data: connectionStatus, refetch: refetchConnection } = useQuery<any>({
     queryKey: ["amazon-connection-status-dashboard"],
     queryFn: async () => {
       const response = await sdk.client.fetch("/admin/amazon/connection/test", {
@@ -90,7 +90,7 @@ const AmazonSDKV2Dashboard = () => {
   })
 
   // 마켓플레이스 참여 정보 조회
-  const { data: marketplaceData, isLoading: isMarketplaceLoading } = useQuery<any>({
+  const { data: marketplaceData, isLoading: isMarketplaceLoading, refetch: refetchMarketplaces } = useQuery<any>({
     queryKey: ["amazon-marketplace-participations-dashboard"],
     queryFn: async () => {
       const response = await sdk.client.fetch("/admin/amazon/marketplaces/participations", {
@@ -307,7 +307,9 @@ const AmazonSDKV2Dashboard = () => {
             <Heading level="h2" className="mb-4">마켓플레이스 참여 현황</Heading>
             
             {isMarketplaceLoading ? (
-              <Text>마켓플레이스 정보를 불러오는 중...</Text>
+              <div className="flex items-center justify-center py-8">
+                <Text>마켓플레이스 정보를 불러오는 중...</Text>
+              </div>
             ) : marketplaceData && marketplaceData.length > 0 ? (
               <Table>
                 <Table.Header>
@@ -349,7 +351,44 @@ const AmazonSDKV2Dashboard = () => {
                 </Table.Body>
               </Table>
             ) : (
-              <Text>마켓플레이스 정보가 없습니다.</Text>
+              <div className="text-center py-8">
+                <div className="mb-4">
+                  <InformationCircleSolid className="mx-auto h-12 w-12 text-yellow-500" />
+                </div>
+                <Heading level="h3" className="mb-2">마켓플레이스가 설정되지 않았습니다</Heading>
+                <Text className="mb-4 text-ui-fg-subtle">
+                  Amazon 마켓플레이스에 참여하고 있지 않거나 초기 설정이 필요합니다.
+                </Text>
+                <div className="space-y-2">
+                  <div className="flex gap-2 justify-center">
+                    <Button 
+                      variant="secondary" 
+                      onClick={async () => {
+                        // 연결 테스트를 다시 시도
+                        await refetchConnection()
+                        await refetchMarketplaces()
+                      }}
+                    >
+                      연결 다시 확인
+                    </Button>
+                    <Button 
+                      variant="primary"
+                      onClick={() => {
+                        // 새 탭에서 Amazon Seller Central 열기
+                        window.open('https://sellercentral.amazon.com/', '_blank')
+                      }}
+                    >
+                      Amazon Seller Central
+                    </Button>
+                  </div>
+                  <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                    <Text size="small" className="mb-2 font-medium">설정 스크립트 실행:</Text>
+                    <code className="text-xs bg-gray-100 px-2 py-1 rounded">
+                      npx medusa exec src/scripts/setup-amazon-integration.ts
+                    </code>
+                  </div>
+                </div>
+              </div>
             )}
           </Container>
         </Tabs.Content>

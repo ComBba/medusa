@@ -57,12 +57,38 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       // 마켓플레이스 참여 정보도 함께 조회
       try {
         const marketplaces = await amazonService.getMarketplaceParticipations()
-        finalResult.marketplaces = marketplaces?.payload || []
+        const marketplaceData = marketplaces?.payload || []
+        
+        // 프론트엔드 인터페이스에 맞게 속성 이름 변경
+        finalResult.marketplaces = marketplaceData.map((participation: any) => ({
+          marketplace: {
+            id: participation.marketplace.id,
+            name: participation.marketplace.name,
+            countryCode: participation.marketplace.countryCode,
+            defaultCurrencyCode: participation.marketplace.defaultCurrencyCode,
+            domainName: participation.marketplace.domainName
+          },
+          participation: {
+            isParticipating: participation.participation.isParticipating,
+            hasSuspendedListings: participation.participation.hasSuspendedListings,
+            listingCount: participation.participation.listingCount || 0
+          }
+        }))
+        
+        if (marketplaceData.length === 0) {
+          finalResult.message += " 그러나 참여 중인 마켓플레이스가 없습니다."
+          finalResult.suggestion = "npx medusa exec src/scripts/setup-amazon-integration.ts"
+        } else {
+          finalResult.message += ` ${marketplaceData.length}개 마켓플레이스에 참여 중입니다.`
+        }
       } catch (mpError) {
         console.warn("[AMAZON API] 마켓플레이스 정보 조회 실패:", mpError.message)
+        finalResult.marketplaces = []
+        finalResult.suggestion = "환경변수와 Amazon 설정을 확인하세요."
       }
     } else {
       console.error("[AMAZON API] 연결 테스트 실패:", finalResult.message)
+      finalResult.suggestion = "환경변수 설정을 확인하거나 Amazon Seller Central에서 API 권한을 확인하세요."
     }
     
     return res.status(finalResult.success ? 200 : 400).json({

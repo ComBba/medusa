@@ -22,19 +22,19 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       })
     }
     
-    // 결과 가공
+    // 결과 가공 (프론트엔드 인터페이스에 맞게 속성 이름 변경)
     const marketplaces = participationsResult.payload.map((participation: any) => ({
       marketplace: {
         id: participation.marketplace.id,
         name: participation.marketplace.name,
-        country_code: participation.marketplace.countryCode,
-        currency_code: participation.marketplace.defaultCurrencyCode,
-        domain_name: participation.marketplace.domainName
+        countryCode: participation.marketplace.countryCode,
+        defaultCurrencyCode: participation.marketplace.defaultCurrencyCode,
+        domainName: participation.marketplace.domainName
       },
       participation: {
-        is_participating: participation.participation.isParticipating,
-        has_suspended_listings: participation.participation.hasSuspendedListings,
-        listing_count: participation.participation.listingCount || 0
+        isParticipating: participation.participation.isParticipating,
+        hasSuspendedListings: participation.participation.hasSuspendedListings,
+        listingCount: participation.participation.listingCount || 0
       }
     }))
     
@@ -93,9 +93,12 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
         })
         
         if (existingMarketplaces.length > 0) {
-          await amazonService.updateMarketplace(existingMarketplaces[0].id, marketplaceData)
+          await amazonService.updateAmazonMarketplaces([{
+            selector: { id: existingMarketplaces[0].id },
+            data: marketplaceData
+          }])
         } else {
-          await amazonService.createMarketplace(marketplaceData)
+          await amazonService.createAmazonMarketplaces(marketplaceData)
         }
       } catch (dbError) {
         console.warn(`[AMAZON API] 마켓플레이스 ${participation.marketplace.id} DB 업데이트 실패:`, dbError.message)
@@ -104,19 +107,19 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     
     console.log("[AMAZON API] 마켓플레이스 참여 정보 새로고침 완료")
     
-    // 가공된 데이터 반환
+    // 가공된 데이터 반환 (프론트엔드 인터페이스에 맞게 속성 이름 변경)
     const processedMarketplaces = marketplaces.map((participation: any) => ({
       marketplace: {
         id: participation.marketplace.id,
         name: participation.marketplace.name,
-        country_code: participation.marketplace.countryCode,
-        currency_code: participation.marketplace.defaultCurrencyCode,
-        domain_name: participation.marketplace.domainName
+        countryCode: participation.marketplace.countryCode,
+        defaultCurrencyCode: participation.marketplace.defaultCurrencyCode,
+        domainName: participation.marketplace.domainName
       },
       participation: {
-        is_participating: participation.participation.isParticipating,
-        has_suspended_listings: participation.participation.hasSuspendedListings,
-        listing_count: participation.participation.listingCount || 0
+        isParticipating: participation.participation.isParticipating,
+        hasSuspendedListings: participation.participation.hasSuspendedListings,
+        listingCount: participation.participation.listingCount || 0
       }
     }))
     
